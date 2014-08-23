@@ -1,5 +1,7 @@
 ---
 title: This Is A Test Page
+layout: default
+tagline: TestPage001
 ---
-### Testing Headers H3
-I need more coffee this morning, methinks!
+### Testing Headers!!!
+I need more coffee this morning. I'm feeling sleepy still.
