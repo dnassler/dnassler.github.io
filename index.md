@@ -12,6 +12,10 @@ tagline: Software Developer And Artist
 
 ---
 
+### [Creative Computing]({{site.url}}/creative.html)
+
+---
+
 ### [My Vimeo Videos](http://vimeo.com/dnassler)
 
 ---
