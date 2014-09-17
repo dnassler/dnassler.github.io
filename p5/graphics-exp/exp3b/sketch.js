@@ -15,25 +15,67 @@ var globalMaxR = 200;
 var sounds = [];
 var maxSounds;
 
-var showHelpText = true;
-
-function preload() {
-  for (var i=1; i<=7; i++) {
+var showHelpText = false;
+var numSoundFiles = 7;
+var numSoundFilesLoaded = 0;
+var isInitializing = true;
+function loadSounds() {
+  for (var i=1; i<=numSoundFiles; i++) {
     console.log('Sep_17_2014-011_'+i+'.mp3')
-    sounds.push(loadSound('Sep_17_2014-011_'+i+'.mp3'));
+    sounds.push(loadSound('Sep_17_2014-011_'+i+'.mp3', soundLoaded));
   }
+
+}
+function soundLoaded() {
+  numSoundFilesLoaded += 1;
+  redraw();
+  console.log("loaded sound file... count="+numSoundFilesLoaded);
+  if ( numSoundFilesLoaded === numSoundFiles ) {
+
+    isInitializing = false;
+    var reverb = new p5.Reverb();
+    for ( var soundIndex=0; soundIndex < sounds.length; soundIndex++ ) {
+      var sound = sounds[soundIndex];
+      sound.playMode('sustain');
+      reverb.process( sound, 3, 2 );
+    }
+    maxSounds = sounds.length;
+    showHelpText = true;
+    window.setTimeout(function() { showHelpText = false; }, 5000);
+
+    console.log("done");
+    loop();
+    // window.setTimeout(function() {
+    //   showInitProgress = false;
+    //   loop();
+    // }, 500);
+  }
+}
+
+function showInitStatus() {
+  var percentLoaded = numSoundFilesLoaded / numSoundFiles;
+  fill(0);
+  text("initializing...", width/2, height/2);
+  // stroke(0);
+  // strokeWeight(10);
+  // noFill();
+  // rect(width/2, height/2, 300, 50);
+  // fill(0,0,255);
+  // noStroke();
+  // rect(width/2, height/2, percentLoaded * 300, 30);
 }
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
 
-  var reverb = new p5.Reverb();
-  for ( var soundIndex=0; soundIndex < sounds.length; soundIndex++ ) {
-    var sound = sounds[soundIndex];
-    sound.playMode('sustain');
-    reverb.process( sound, 3, 2 );
-  }
-  maxSounds = sounds.length;
+  background(255);
+
+  textFont("sans-serif");
+  textSize(30);
+  textAlign(CENTER);
+
+  loadSounds();
+
   //sounds[0].play();
 
   for ( var rowNum = 0; rowNum<numRows; rowNum++ ) {
@@ -44,9 +86,6 @@ function setup() {
 
   }
 
-  textFont("sans-serif");
-  textSize(30);
-  textAlign(CENTER);
 
   rectMode(CENTER);
   ellipseMode(CENTER);
@@ -63,7 +102,8 @@ function setup() {
   // image( img, 0, 0 );
   // noLoop();
 
-  window.setTimeout(function() { showHelpText = false; }, 5000);
+  noLoop(); // while loading sounds
+
 }
 
 function draw() {
@@ -142,6 +182,9 @@ function draw() {
     text("touch to control speed", width/2, height/2);
   }
 
+  if ( isInitializing ) {
+    showInitStatus();
+  }
   if ( displaySpeedControl ) {
     drawSpeedControl();
   }
