@@ -5,6 +5,7 @@ var numBubblesPerRow = 10;
 var numRows = 2;
 var maxDirChanges = 1;
 var maxRadius = 100;
+var maxPoppedBubbleSize = 100;
 var distThreshold1 = 200;
 var distThreshold2 = 50;
 var pg;
@@ -205,6 +206,7 @@ function Bubble(inX,inY,inR, inIndex) {
   this.vx = this.vx2 = 0;
   this.vy = this.vy2 = 0;
   this.numDirChanges = 0;
+  this.isPopping = false;
 }
 Bubble.prototype.evolve = function() {
   if ( this.isMoving ) {
@@ -219,8 +221,8 @@ Bubble.prototype.evolve = function() {
     if ( this.x < 0 || this.x > width || this.y < 0 || this.y > height ) {
       var soundIndex = floor(random(maxSounds));
       sounds[soundIndex].play();
-
-      this.reset();
+      this.popIt();
+      //this.reset();
       return;
     }
     if ( abs(this.y-this.y0) > this.turnY && this.numDirChanges < maxDirChanges ) {
@@ -238,6 +240,14 @@ Bubble.prototype.evolve = function() {
         this.vx2 = 0;
       }
     }
+
+  } else if ( this.isPopping ) {
+
+    this.r += globalSpeed * 10;
+    if ( this.r > maxPoppedBubbleSize ) {
+      this.reset();
+    }
+
   } else {
     this.r += this.expSpeed * globalSpeed;
     if ( this.r > this.maxR ) {
@@ -259,7 +269,13 @@ Bubble.prototype.startMoving = function() {
   } else if ( this.y === height ) {
     this.vy2 = -abs(this.vy2);
   }
-}
+};
+Bubble.prototype.popIt = function() {
+  this.vx = 0;
+  this.vy = 0;
+  this.isMoving = false;
+  this.isPopping = true;
+};
 Bubble.prototype.reset = function() {
   this.r = 0;
   this.x = this.x0;
@@ -267,6 +283,7 @@ Bubble.prototype.reset = function() {
   this.vx = this.vx2 = this.vy = this.vy2 = 0;
   this.expSpeed = random(1,10);
   this.isMoving = false;
+  this.isPopping = false;
   this.numDirChanges = 0;
 
   this.color = color(random(255),random(255), random(255), 150);
@@ -278,8 +295,18 @@ Bubble.prototype.reset = function() {
 Bubble.prototype.display = function() {
   //fill( 0,100,255, 100 );
   //stroke( 0,120,200, 255 );
+
+  if ( this.isPopping ) {
+    stroke(this.color);
+    strokeWeight(10);
+    noFill();
+    ellipse( this.x, this.y, this.r*2, this.r*2 );
+    return;
+  }
+
   noStroke();
   fill( this.color );
+
   if ( this.isMoving ) {
     pg.fill( 220 );
     //pg.rect( this.x, this.y, this.r*2, this.r*2 );
