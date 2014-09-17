@@ -8,23 +8,45 @@ var maxRadius = 100;
 var distThreshold1 = 200;
 var distThreshold2 = 50;
 var pg;
-var globalSpeed = 0.5;
+var globalSpeed = 0.1;
+var globalMinR = 100;
+var globalMaxR = 200;
 
+var sounds = [];
+var maxSounds;
+
+var showHelpText = true;
 
 function preload() {
-  //img = loadImage("randomSquare100.png"); // img is size 100x100 pixels
+  for (var i=1; i<=7; i++) {
+    console.log('Sep_17_2014-011_'+i+'.mp3')
+    sounds.push(loadSound('Sep_17_2014-011_'+i+'.mp3'));
+  }
 }
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
 
+  var reverb = new p5.Reverb();
+  for ( var soundIndex=0; soundIndex < sounds.length; soundIndex++ ) {
+    var sound = sounds[soundIndex];
+    sound.playMode('sustain');
+    reverb.process( sound, 3, 2 );
+  }
+  maxSounds = sounds.length;
+  //sounds[0].play();
+
   for ( var rowNum = 0; rowNum<numRows; rowNum++ ) {
-    for ( var i=0; i<numBubblesPerRow*numRows; i++ ) {
+    for ( var i=0; i<numBubblesPerRow*2; i++ ) {
       bubbles.push( new Bubble((i%numBubblesPerRow)*width/numBubblesPerRow, numRows===1 ? height/2 : height/(numRows-1)*rowNum, random(100), i) );
 
     }
 
   }
+
+  textFont("sans-serif");
+  textSize(30);
+  textAlign(CENTER);
 
   rectMode(CENTER);
   ellipseMode(CENTER);
@@ -41,7 +63,7 @@ function setup() {
   // image( img, 0, 0 );
   // noLoop();
 
-
+  window.setTimeout(function() { showHelpText = false; }, 5000);
 }
 
 function draw() {
@@ -58,29 +80,31 @@ function draw() {
   }
   for ( var i=0; i<bubbles.length; i++ ) {
     bubble = bubbles[i];
-    //var connectionsThreshold1 = 0;
-    var connectionsThreshold1Arr = [];
+    var currentConnections = 0;
+    // var connectionsThreshold1Arr = [];
     if ( bubble.isMoving ) {
       for ( var j=0; j<bubbles.length; j++ ) {
         if ( i === j ) continue;
         bubble2 = bubbles[j];
         if ( bubble2.isMoving ) {
           var d = dist( bubble.x, bubble.y, bubble2.x, bubble2.y );
-          if ( d < distThreshold2 ) {
-            stroke(100,0,50,20);
-            //strokeWeight(10);
-            line( bubble.x, bubble.y, bubble2.x, bubble2.y );
 
-          } else if ( d < distThreshold1 ) {
+          if ( d < distThreshold1 ) {
             stroke(100,0,50,20);
             line( bubble.x, bubble.y, bubble2.x, bubble2.y );
-            //connectionsThreshold1 += 1;
-            connectionsThreshold1Arr.push( j );
+            currentConnections += 1;
+            //connectionsThreshold1Arr.push( j );
           }
         }
       }
-
+      // if ( currentConnections < bubble.numConnections && currentConnections === 0 ) {
+      //   var soundIndex = floor(random(maxSounds));
+      //   sounds[soundIndex].play();
+      //
+      // }
     }
+    bubble.numConnections = currentConnections;
+
     // if ( connectionsThreshold1Arr.length >= 3 ) {
     //   var minx, miny, maxx, maxy;
     //   minx = bubble.x;
@@ -113,6 +137,11 @@ function draw() {
     bubble.display();
   }
 
+  if ( showHelpText ) {
+    fill(0);
+    text("touch to control speed", width/2, height/2);
+  }
+
   if ( displaySpeedControl ) {
     drawSpeedControl();
   }
@@ -123,9 +152,10 @@ function Bubble(inX,inY,inR, inIndex) {
   this.x = this.x0 = inX;
   this.y = this.y0 = inY;
   this.r = inR;
+
   this.expSpeed = random(1,10);
   this.color = color(random(255),random(255), random(255), 150);
-  this.maxR = random(100,200);
+  this.maxR = random(globalMinR,globalMaxR);
   this.turnY = random(200,(height-200));
   //this.targetBubble = null;
   this.isMoving = false;
@@ -144,6 +174,9 @@ Bubble.prototype.evolve = function() {
     this.x += this.vx * globalSpeed;
     this.y += this.vy * globalSpeed;
     if ( this.x < 0 || this.x > width || this.y < 0 || this.y > height ) {
+      var soundIndex = floor(random(maxSounds));
+      sounds[soundIndex].play();
+
       this.reset();
       return;
     }
@@ -165,6 +198,10 @@ Bubble.prototype.evolve = function() {
   } else {
     this.r += this.expSpeed * globalSpeed;
     if ( this.r > this.maxR ) {
+
+      // var soundIndex = floor( maxSounds*(this.r - globalMinR)/globalMaxR ); //floor(random(maxSounds));
+      // sounds[soundIndex].play();
+
       this.r = random(5,20);
       this.startMoving();
     }
@@ -190,8 +227,9 @@ Bubble.prototype.reset = function() {
   this.numDirChanges = 0;
 
   this.color = color(random(255),random(255), random(255), 150);
-  this.maxR = random(100,200);
+  this.maxR = random(globalMinR,globalMaxR);
   this.turnY = random(200,(height-200));
+  this.numConnections = 0;
 
 }
 Bubble.prototype.display = function() {
@@ -245,6 +283,7 @@ var touchEnded = mouseReleased = function() {
   displaySpeedControl = false;
 };
 var drawSpeedControl = function() {
+  showHelpText = false;
   var left = width/10;
   var right = width - width/10;
   var controlWidth = width - width/10*2;
