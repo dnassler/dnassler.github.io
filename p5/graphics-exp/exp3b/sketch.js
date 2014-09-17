@@ -4,10 +4,12 @@ var bubbles = [];
 var numBubblesPerRow = 10;
 var numRows = 2;
 var maxDirChanges = 1;
-var maxRadius = 200;
-var distThreshold1 = 300;
+var maxRadius = 100;
+var distThreshold1 = 200;
 var distThreshold2 = 50;
 var pg;
+var globalSpeed = 0.5;
+
 
 function preload() {
   //img = loadImage("randomSquare100.png"); // img is size 100x100 pixels
@@ -18,7 +20,7 @@ function setup() {
 
   for ( var rowNum = 0; rowNum<numRows; rowNum++ ) {
     for ( var i=0; i<numBubblesPerRow*numRows; i++ ) {
-      bubbles.push( new Bubble(i*width/numBubblesPerRow, numRows===1 ? height/2 : height/(numRows-1)*rowNum, random(100), i) );
+      bubbles.push( new Bubble((i%numBubblesPerRow)*width/numBubblesPerRow, numRows===1 ? height/2 : height/(numRows-1)*rowNum, random(100), i) );
 
     }
 
@@ -111,6 +113,9 @@ function draw() {
     bubble.display();
   }
 
+  if ( displaySpeedControl ) {
+    drawSpeedControl();
+  }
 }
 
 function Bubble(inX,inY,inR, inIndex) {
@@ -136,8 +141,8 @@ Bubble.prototype.evolve = function() {
     if ( this.vy2 !== this.vy ) {
       this.vy += (this.vy2-this.vy)/10.0;
     }
-    this.x += this.vx;
-    this.y += this.vy;
+    this.x += this.vx * globalSpeed;
+    this.y += this.vy * globalSpeed;
     if ( this.x < 0 || this.x > width || this.y < 0 || this.y > height ) {
       this.reset();
       return;
@@ -158,7 +163,7 @@ Bubble.prototype.evolve = function() {
       }
     }
   } else {
-    this.r += this.expSpeed;
+    this.r += this.expSpeed * globalSpeed;
     if ( this.r > this.maxR ) {
       this.r = random(5,20);
       this.startMoving();
@@ -186,6 +191,7 @@ Bubble.prototype.reset = function() {
 
   this.color = color(random(255),random(255), random(255), 150);
   this.maxR = random(100,200);
+  this.turnY = random(200,(height-200));
 
 }
 Bubble.prototype.display = function() {
@@ -202,4 +208,49 @@ Bubble.prototype.display = function() {
   //rect( this.x, this.y, this.r*2, this.r*2 );
   ellipse( this.x, this.y, this.r*2, this.r*2 );
 
+};
+
+var pointerStartedX;
+var globalSpeed0;
+var displaySpeedControl = false;
+var touchStarted = function() {
+  pointerStarted( touchX );
+};
+var mouseStarted = function() {
+  pointerStarted( mouseX );
+}
+var pointerStarted = function(px) {
+  displaySpeedControl = true;
+  pointerStartedX = px;
+  globalSpeed0 = globalSpeed;
+};
+var pointerMoved = function(px) {
+  if ( !displaySpeedControl ) {
+    return;
+  }
+  globalSpeed = globalSpeed0 + (px - pointerStartedX) / width;
+  if (globalSpeed < 0) {
+    globalSpeed = 0;
+  } else if (globalSpeed > 1) {
+    globalSpeed = 1;
+  }
+}
+var mouseMoved = function() {
+  pointerMoved(mouseX);
+};
+var touchMoved = function() {
+  pointerMoved(touchX);
+}
+var touchEnded = mouseReleased = function() {
+  displaySpeedControl = false;
+};
+var drawSpeedControl = function() {
+  var left = width/10;
+  var right = width - width/10;
+  var controlWidth = width - width/10*2;
+  var controlStepWidth = controlWidth/100;
+  fill(0,255,0);
+  for (var i = 0; i < floor(100*globalSpeed); i++) {
+    rect(left+i*controlStepWidth,height/2,controlStepWidth*0.5,100);
+  }
 };
