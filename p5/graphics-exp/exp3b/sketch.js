@@ -207,6 +207,8 @@ function Bubble(inX,inY,inR, inIndex) {
   this.vy = this.vy2 = 0;
   this.numDirChanges = 0;
   this.isPopping = false;
+  this.poppedStrokeWeight = 1;
+
 }
 Bubble.prototype.evolve = function() {
   if ( this.isMoving ) {
@@ -244,6 +246,10 @@ Bubble.prototype.evolve = function() {
   } else if ( this.isPopping ) {
 
     this.r += globalSpeed * 10;
+    this.poppedStrokeWeight = (1 - this.r / maxPoppedBubbleSize) * 10;
+    if ( this.poppedStrokeWeight < 1 ) {
+      this.poppedStrokeWeight = 1;
+    }
     if ( this.r > maxPoppedBubbleSize ) {
       this.reset();
     }
@@ -290,7 +296,7 @@ Bubble.prototype.reset = function() {
   this.maxR = random(globalMinR,globalMaxR);
   this.turnY = random(200,(height-200));
   this.numConnections = 0;
-
+  this.poppedStrokeWeight = 1;
 }
 Bubble.prototype.display = function() {
   //fill( 0,100,255, 100 );
@@ -298,7 +304,7 @@ Bubble.prototype.display = function() {
 
   if ( this.isPopping ) {
     stroke(this.color);
-    strokeWeight(10);
+    strokeWeight(this.poppedStrokeWeight);
     noFill();
     ellipse( this.x, this.y, this.r*2, this.r*2 );
     return;
