@@ -12,7 +12,7 @@ var showOrbitTrails = true;
 var showConnectedPaths = true;
 var showHelpText = true;
 var lightAngle;
-var lightAngleFluctuator = 0;
+var lightAngleFluctuator = 0.02*globalSpeed;
 var worldWidth;
 var worldHeight;
 var worldWidthBuffer = 300;
@@ -41,7 +41,7 @@ function setup() {
 
   window.setTimeout(function() { showHelpText = false; }, 5000);
 
-  lightAngle = QUARTER_PI;
+  //lightAngle = HALF_PI;
 
 }
 
@@ -93,12 +93,13 @@ BubbleMgr.prototype.update = function() {
 }
 
 BubbleMgr.prototype.draw = function() {
+  lightAngle = HALF_PI + (0.4+noise(lightAngleFluctuator)/4)*QUARTER_PI*cos(lightAngleFluctuator);
+
   var bArrLen = this.bArr.length;
   for (var i=0; i<bArrLen; i++ ) {
     this.bArr[i].draw();
   }
   //console.log("v="+(0.4+noise(lightAngleFluctuator)/4));
-  lightAngle = HALF_PI + (0.4+noise(lightAngleFluctuator)/4)*QUARTER_PI*cos(lightAngleFluctuator);
   lightAngleFluctuator += 0.02*globalSpeed;// + noise(lightAngleFluctuator)/100;
 }
 
