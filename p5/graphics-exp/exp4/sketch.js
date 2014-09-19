@@ -6,7 +6,7 @@
 // }
 
 var bMgr;
-var globalSpeed = 0.03;
+var globalSpeed = 0.5;
 var showOrbitPath = false;
 var showOrbitTrails = true;
 var showConnectedPaths = true;
@@ -29,6 +29,11 @@ function draw() {
   background(255);
   bMgr.update();
   bMgr.draw();
+
+  if ( displaySpeedControl ) {
+    drawSpeedControl();
+  }
+
 }
 
 //--
@@ -137,7 +142,7 @@ function Bubble( inBubbleRadius, inOrbitObj, inOrbitRadius, inOrbitRadius2, inOr
 // };
 Bubble.prototype.update = function() {
   if ( this.orbitingObj ) {
-    this.orbitPosAngle += this.orbitVelocity * globalSpeed;
+    this.orbitPosAngle += this.orbitVelocity * globalSpeed/10;
     this.x = cos(this.orbitPosAngle) * this.orbitRadius;
     this.y = sin(this.orbitPosAngle) * this.orbitRadius2;
     //this.orbitPlaneAngle += this.orbitPlaneAngleChangeRate;
@@ -146,8 +151,8 @@ Bubble.prototype.update = function() {
       obj.update();
     }
   } else {
-    this.x += this.vx * globalSpeed;
-    this.y += this.vy * globalSpeed;
+    this.x += this.vx * globalSpeed/10;
+    this.y += this.vy * globalSpeed/10;
     if ( this.x > width+300 ) {
       this.x = -300;
     } else if ( this.x < -300 ) {
@@ -200,4 +205,56 @@ Bubble.prototype.drawShadow = function() {
   var p1x = this.x + cos(lightAngle-QUARTER_PI)*this.bubbleRadius;
   var p1y = this.y + sin(lightAngle-QUARTER_PI)*this.bubbleRadius;
   //line(p0x,p0y,)
+};
+
+//-----
+//-----
+
+var pointerStartedX;
+var globalSpeed0;
+var displaySpeedControl = false;
+
+var touchStarted = function() {
+  pointerStarted( touchX );
+};
+var mouseStarted = function() {
+  pointerStarted( mouseX );
+}
+var pointerStarted = function(px) {
+  displaySpeedControl = true;
+  pointerStartedX = px;
+  globalSpeed0 = globalSpeed;
+};
+var pointerMoved = function(px) {
+  if ( !displaySpeedControl ) {
+    return;
+  }
+  globalSpeed = globalSpeed0 + (px - pointerStartedX) / width;
+  if (globalSpeed < 0) {
+    globalSpeed = 0;
+  } else if (globalSpeed > 1) {
+    globalSpeed = 1;
+  }
+  console.log("globalSpeed="+globalSpeed);
+}
+var mouseMoved = function() {
+  pointerMoved(mouseX);
+};
+var touchMoved = function() {
+  pointerMoved(touchX);
+}
+var touchEnded = mouseReleased = function() {
+  displaySpeedControl = false;
+};
+var drawSpeedControl = function() {
+  showHelpText = false;
+  var left = width/10;
+  var right = width - width/10;
+  var controlWidth = width - width/10*2;
+  var controlStepWidth = controlWidth/100;
+  fill(0,255,0);
+  noStroke();
+  for (var i = 0; i < floor(100*globalSpeed); i++) {
+    rect(left+i*controlStepWidth,height/2,controlStepWidth*0.5,100);
+  }
 };
