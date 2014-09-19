@@ -6,10 +6,11 @@
 // }
 
 var bMgr;
-var globalSpeed = 0.5;
+var globalSpeed = 0.2;
 var showOrbitPath = false;
 var showOrbitTrails = true;
 var showConnectedPaths = true;
+var showHelpText = true;
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
@@ -23,12 +24,24 @@ function setup() {
   angleMode(RADIANS);
 
   bMgr = new BubbleMgr( 35 );
+
+  textFont("sans-serif");
+  textSize(30);
+  textAlign(CENTER);
+
+  window.setTimeout(function() { showHelpText = false; }, 5000);
+
 }
 
 function draw() {
   background(255);
   bMgr.update();
   bMgr.draw();
+
+  if ( showHelpText ) {
+    fill(0);
+    text("touch to control speed", width/2, height/2);
+  }
 
   if ( displaySpeedControl ) {
     drawSpeedControl();
