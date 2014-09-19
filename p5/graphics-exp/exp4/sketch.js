@@ -6,7 +6,7 @@
 // }
 
 var bMgr;
-var globalSpeed = 0.2;
+var globalSpeed = 0.08;
 var showOrbitPath = false;
 var showOrbitTrails = true;
 var showConnectedPaths = true;
@@ -215,6 +215,11 @@ Bubble.prototype.draw = function() {
   noStroke();
   fill(this.color);
   ellipse(this.x,this.y,this.bubbleRadius*2,this.bubbleRadius*2);
+
+  if ( !this.orbitingObj ) {
+    this.drawShadow();
+  }
+
   if ( this.orbitingObjArr.length > 0 ) {
     for (var i=0; i<this.orbitingObjArr.length; i++) {
       var obj = this.orbitingObjArr[i];
@@ -222,10 +227,8 @@ Bubble.prototype.draw = function() {
       //obj.drawShadow();
     }
   }
+
   pop();
-  if ( !this.orbitingObj ) {
-    this.drawShadow();
-  }
 };
 
 Bubble.prototype.drawShadow = function() {
