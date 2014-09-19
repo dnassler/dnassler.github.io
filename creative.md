@@ -10,4 +10,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is ja
   * [Experiment 2 - pinch and rotate and swipe gestures]({{site.url}}/p5/exp4/index.html)
   * [Experiment 3 - waves at sea]({{site.url}}/p5/graphics-exp/expWave1/index.html)
   * [Experiment 4 - bubbles]({{site.url}}/p5/graphics-exp/exp3b/index.html)
-  * [Experiment 5 - twirling tower structures of a possible future city]({{site.url}}/p5/graphics-exp/exp4/index.html)
+  * [Experiment 5 - twirling, shifting structures of a possible future]({{site.url}}/p5/graphics-exp/exp4/index.html)
