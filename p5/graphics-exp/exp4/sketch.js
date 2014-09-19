@@ -12,6 +12,7 @@ var showOrbitTrails = true;
 var showConnectedPaths = true;
 var showHelpText = true;
 var lightAngle;
+var lightAngleFluctuator = 0;
 var worldWidth;
 var worldHeight;
 var worldWidthBuffer = 300;
@@ -40,7 +41,7 @@ function setup() {
 
   window.setTimeout(function() { showHelpText = false; }, 5000);
 
-  lightAngle = HALF_PI;
+  lightAngle = QUARTER_PI;
 
 }
 
@@ -96,6 +97,9 @@ BubbleMgr.prototype.draw = function() {
   for (var i=0; i<bArrLen; i++ ) {
     this.bArr[i].draw();
   }
+  //console.log("v="+(0.4+noise(lightAngleFluctuator)/4));
+  lightAngle = HALF_PI + (0.4+noise(lightAngleFluctuator)/4)*QUARTER_PI*cos(lightAngleFluctuator);
+  lightAngleFluctuator += 0.02*globalSpeed;// + noise(lightAngleFluctuator)/100;
 }
 
 
@@ -232,17 +236,53 @@ Bubble.prototype.draw = function() {
 };
 
 Bubble.prototype.drawShadow = function() {
+  //lightAngle = HALF_PI - HALF_PI*0.9*(mouseX/(width/2)-1);
+  // lightAngle = HALF_PI - HALF_PI*(mouseX/(width/4)-2);
+
   var p0x = this.x + cos(lightAngle+HALF_PI)*this.bubbleRadius;
   var p0y = this.y + sin(lightAngle+HALF_PI)*this.bubbleRadius;
   var p1x = this.x + cos(lightAngle-HALF_PI)*this.bubbleRadius;
   var p1y = this.y + sin(lightAngle-HALF_PI)*this.bubbleRadius;
-  var x0 = p0x;// - sqrt((height-p0y)/sin(lightAngle) - sq(height-p0y));
-  var y0 = height;
-  var x1 = p1x;
-  var y1 = height;
+  // var x0 = p0x;// - sqrt((height-p0y)/sin(lightAngle) - sq(height-p0y));
+
+
+  // var x0 = p0x + (lightAngle<HALF_PI ? 1:-1)*sqrt(sq((height-p0y)/sin(lightAngle)) - sq(height-p0y));
+  // var y0 = height;
+  // var x1 = p1x + (lightAngle<HALF_PI ? 1:-1)*sqrt(sq((height-p1y)/sin(lightAngle)) - sq(height-p1y));;
+  // var y1 = height;
+
+  var x0,y0,x1,y1;
+  x0 = p0x + (cos(lightAngle)>0?1:-1)*sqrt(sq((height-p0y)/sin(lightAngle)) - sq(height-p0y));
+  y0 = sin(lightAngle)>0 ? height : 0;
+  x1 = p1x + (cos(lightAngle)>0?1:-1)*sqrt(sq((height-p1y)/sin(lightAngle)) - sq(height-p1y));;
+  y1 = sin(lightAngle)>0 ? height : 0;
+
   noStroke();
   fill(120,50);
-  rect(p0x,p0y,p1x-p0x,height-p0y);
+  if ( sin(lightAngle)>0 ) {
+
+    x0 = p0x + (cos(lightAngle)>0?1:-1)*sqrt(sq((height-p0y)/sin(lightAngle)) - sq(height-p0y));
+    y0 = sin(lightAngle)>0 ? height : 0;
+    x1 = p1x + (cos(lightAngle)>0?1:-1)*sqrt(sq((height-p1y)/sin(lightAngle)) - sq(height-p1y));;
+    y1 = sin(lightAngle)>0 ? height : 0;
+
+    quad(p0x,p0y,p1x,p1y,x1,y1,x0,y0);
+
+  } else {
+    x0 = p0x + (cos(lightAngle)>0?1:-1)*sqrt(sq((p0y)/sin(lightAngle)) - sq(p0y));
+    y0 = sin(lightAngle)>0 ? height : 0;
+    x1 = p1x + (cos(lightAngle)>0?1:-1)*sqrt(sq((p1y)/sin(lightAngle)) - sq(p1y));;
+    y1 = sin(lightAngle)>0 ? height : 0;
+
+
+    //quad(p1x,p1y,p0x,p0y,x1,y1,x0,y0);
+    quad(p0x,p0y,p1x,p1y,x1,y1,x0,y0);
+
+
+  }
+  //rect(p0x,p0y,p1x-p0x,height-p0y);
+
+  // stroke(120,50);
   // line(p0x,p0y,x0,y0);
   // line(p1x,p1y,x1,y1);
 
