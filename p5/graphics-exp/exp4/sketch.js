@@ -59,7 +59,7 @@ function BubbleMgr( numOfBubbles ) {
   // add one orbiting bubble per main bubble
   var orbitingBubblesArr = [];
   for ( var i=0; i<numOfBubbles; i++ ) {
-    var numOfOrbitingBubbles = 1;//random(0,5);
+    var numOfOrbitingBubbles = floor(random(0,3));
     for ( var j=0; j<numOfOrbitingBubbles; j++ ) {
       var b = new Bubble( undefined, this.bArr[i] );
       orbitingBubblesArr.push( b );
