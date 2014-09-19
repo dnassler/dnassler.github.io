@@ -11,9 +11,18 @@ var showOrbitPath = false;
 var showOrbitTrails = true;
 var showConnectedPaths = true;
 var showHelpText = true;
+var lightAngle;
+var worldWidth;
+var worldHeight;
+var worldWidthBuffer = 300;
+var worldHeightBufferBottom = 300;
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
+
+  worldWidth = width + worldWidthBuffer*2;
+  worldHeight = height + worldHeightBufferBottom;
+
   // var pg = createGraphics(width,height);
   // pg.clear();
   // pg.fill(0,0,255,255);
@@ -30,6 +39,8 @@ function setup() {
   textAlign(CENTER);
 
   window.setTimeout(function() { showHelpText = false; }, 5000);
+
+  lightAngle = HALF_PI;
 
 }
 
@@ -105,14 +116,14 @@ function Bubble( inBubbleRadius, inOrbitObj, inOrbitRadius, inOrbitRadius2, inOr
       minRandomBubbleRadius = this.orbitingObj.bubbleRadius / 10;
     }
     if ( minRandomBubbleRadius === undefined || minRandomBubbleRadius < 10 ) {
-      minRandomBubbleRadius = 10;
+      minRandomBubbleRadius = 5;
     }
     var maxRandomBubbleRadius;
     if ( this.orbitingObj ) {
       maxRandomBubbleRadius = this.orbitingObj.bubbleRadius * 0.9;
     }
     if ( maxRandomBubbleRadius === undefined ) {
-      maxRandomBubbleRadius = 60;
+      maxRandomBubbleRadius = 30;
     }
     this.bubbleRadius = random(minRandomBubbleRadius, maxRandomBubbleRadius);
   }
@@ -142,8 +153,10 @@ function Bubble( inBubbleRadius, inOrbitObj, inOrbitRadius, inOrbitRadius2, inOr
 
   } else {
 
-    this.x = random(width/10,width*0.9);
-    this.y = random(height/10,height*0.9);
+    // this.x = random(width/10,width*0.9);
+    // this.y = random(height/10,height*0.9);
+    this.x = random(-worldWidthBuffer*0.9, width+worldWidthBuffer*0.9);
+    this.y = random(height/10,height+worldHeightBufferBottom*0.9);
     this.vx = random(50,100);
     this.vy = random(-20,20);
   }
@@ -166,15 +179,15 @@ Bubble.prototype.update = function() {
   } else {
     this.x += this.vx * globalSpeed/10;
     this.y += this.vy * globalSpeed/10;
-    if ( this.x > width+300 ) {
-      this.x = -300;
-    } else if ( this.x < -300 ) {
-      this.x = width+300;
+    if ( this.x > width+worldWidthBuffer ) {
+      this.x = -worldWidthBuffer;
+    } else if ( this.x < -worldWidthBuffer ) {
+      this.x = width+worldWidthBuffer;
     }
-    if ( this.y > height+200 ) {
-      this.y = 0;
+    if ( this.y > height+worldHeightBufferBottom ) {
+      this.vy = -this.vy;
     } else if ( this.y < 0 ) {
-      this.y = height;
+      this.vy = -this.vy;
     }
     for (var i=0; i<this.orbitingObjArr.length; i++) {
       var obj = this.orbitingObjArr[i];
@@ -201,7 +214,7 @@ Bubble.prototype.draw = function() {
   }
   noStroke();
   fill(this.color);
-  ellipse(this.x,this.y,this.bubbleRadius,this.bubbleRadius);
+  ellipse(this.x,this.y,this.bubbleRadius*2,this.bubbleRadius*2);
   if ( this.orbitingObjArr.length > 0 ) {
     for (var i=0; i<this.orbitingObjArr.length; i++) {
       var obj = this.orbitingObjArr[i];
@@ -210,14 +223,26 @@ Bubble.prototype.draw = function() {
     }
   }
   pop();
+  if ( !this.orbitingObj ) {
+    this.drawShadow();
+  }
 };
 
 Bubble.prototype.drawShadow = function() {
-  var p0x = this.x + cos(lightAngle+QUARTER_PI)*this.bubbleRadius;
-  var p0y = this.y + sin(lightAngle+QUARTER_PI)*this.bubbleRadius;
-  var p1x = this.x + cos(lightAngle-QUARTER_PI)*this.bubbleRadius;
-  var p1y = this.y + sin(lightAngle-QUARTER_PI)*this.bubbleRadius;
-  //line(p0x,p0y,)
+  var p0x = this.x + cos(lightAngle+HALF_PI)*this.bubbleRadius;
+  var p0y = this.y + sin(lightAngle+HALF_PI)*this.bubbleRadius;
+  var p1x = this.x + cos(lightAngle-HALF_PI)*this.bubbleRadius;
+  var p1y = this.y + sin(lightAngle-HALF_PI)*this.bubbleRadius;
+  var x0 = p0x;// - sqrt((height-p0y)/sin(lightAngle) - sq(height-p0y));
+  var y0 = height;
+  var x1 = p1x;
+  var y1 = height;
+  noStroke();
+  fill(120,50);
+  rect(p0x,p0y,p1x-p0x,height-p0y);
+  // line(p0x,p0y,x0,y0);
+  // line(p1x,p1y,x1,y1);
+
 };
 
 //-----
