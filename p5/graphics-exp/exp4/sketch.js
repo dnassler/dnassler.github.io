@@ -17,6 +17,8 @@ var worldWidth;
 var worldHeight;
 var worldWidthBuffer = 300;
 var worldHeightBufferBottom = 300;
+var globalMinRandomBubbleRadius = 5;
+var globalMaxRandomBubbleRadius = 30;
 
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
@@ -74,11 +76,12 @@ function BubbleMgr( numOfBubbles ) {
     var numOfOrbitingBubbles = floor(random(0,3));
     for ( var j=0; j<numOfOrbitingBubbles; j++ ) {
       var b = new Bubble( undefined, this.bArr[i] );
-      orbitingBubblesArr.push( b );
+      //orbitingBubblesArr.push( b );
       var numOfSubOrbitingBubbles = random(0,5);
       if ( numOfSubOrbitingBubbles <= 3 ) {
         for ( var k=0; k<numOfSubOrbitingBubbles; k++ ) {
-          orbitingBubblesArr.push( new Bubble( undefined, b, random(50,100),random(50,100), TWO_PI/random(1,2) ) );
+          //orbitingBubblesArr.push( new Bubble( undefined, b, random(50,100),random(50,100), TWO_PI/random(1,2) ) );
+          new Bubble( undefined, b, random(50,100),random(50,100), TWO_PI/random(1,2) );
         }
       }
     }
@@ -120,15 +123,15 @@ function Bubble( inBubbleRadius, inOrbitObj, inOrbitRadius, inOrbitRadius2, inOr
     if ( this.orbitingObj ) {
       minRandomBubbleRadius = this.orbitingObj.bubbleRadius / 10;
     }
-    if ( minRandomBubbleRadius === undefined || minRandomBubbleRadius < 10 ) {
-      minRandomBubbleRadius = 5;
+    if ( minRandomBubbleRadius === undefined || minRandomBubbleRadius < globalMinRandomBubbleRadius ) {
+      minRandomBubbleRadius = globalMinRandomBubbleRadius;
     }
     var maxRandomBubbleRadius;
     if ( this.orbitingObj ) {
       maxRandomBubbleRadius = this.orbitingObj.bubbleRadius * 0.9;
     }
     if ( maxRandomBubbleRadius === undefined ) {
-      maxRandomBubbleRadius = 30;
+      maxRandomBubbleRadius = globalMaxRandomBubbleRadius;
     }
     this.bubbleRadius = random(minRandomBubbleRadius, maxRandomBubbleRadius);
   }
@@ -168,6 +171,34 @@ function Bubble( inBubbleRadius, inOrbitObj, inOrbitRadius, inOrbitRadius2, inOr
 
 }
 
+Bubble.prototype.recreateMainBubble = function() {
+  this.color = color(random(255),random(255),random(255),150);
+  this.y = random(height/10,height+worldHeightBufferBottom*0.9);
+  this.vx = random(50,100);
+  this.vy = random(-20,20);
+  this.bubbleRadius = random(globalMinRandomBubbleRadius, globalMaxRandomBubbleRadius);
+  //clear existing sub-bubbles for garbage collection
+  for (var i=0; i<this.orbitingObjArr.length; i++) {
+    this.orbitingObjArr[i].orbitingObj = undefined;
+  }
+  // reset/regenerate sub-bubbles
+  this.orbitingObjArr = [];
+  var numOfOrbitingBubbles = floor(random(0,3));
+  for ( var j=0; j<numOfOrbitingBubbles; j++ ) {
+    var b = new Bubble( undefined, this );
+    //orbitingBubblesArr.push( b );
+    var numOfSubOrbitingBubbles = random(0,5);
+    if ( numOfSubOrbitingBubbles <= 3 ) {
+      for ( var k=0; k<numOfSubOrbitingBubbles; k++ ) {
+        //orbitingBubblesArr.push( new Bubble( undefined, b, random(50,100),random(50,100), TWO_PI/random(1,2) ) );
+        new Bubble( undefined, b, random(50,100),random(50,100), TWO_PI/random(1,2) );
+      }
+    }
+  }
+
+
+};
+
 // Bubble.prototype.isOrbiting = function() {
 //   return (this.orbitingObj !== undefined);
 // };
@@ -186,6 +217,7 @@ Bubble.prototype.update = function() {
     this.y += this.vy * globalSpeed/10;
     if ( this.x > width+worldWidthBuffer ) {
       this.x = -worldWidthBuffer;
+      this.recreateMainBubble();
     } else if ( this.x < -worldWidthBuffer ) {
       this.x = width+worldWidthBuffer;
     }
