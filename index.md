@@ -17,10 +17,7 @@ tagline: Software Developer And Artist
 ---
 
 ### [My Vimeo Videos](http://vimeo.com/dnassler)
-
----
-
-### [Art Portfolio](http://portfolio.dereknassler.com)
+<!-- ### [Art Portfolio](http://portfolio.dereknassler.com) -->
 
 ---
 
