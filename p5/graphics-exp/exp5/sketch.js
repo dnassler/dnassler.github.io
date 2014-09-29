@@ -764,7 +764,9 @@ function scene10() {
 
     // skip inner doors leaving only perimeter
     doorConfigMode = 2;
-    doorType = "horizontal2";
+    // have only a single door type
+    doorType = doorMgr.randomDoorType();
+    //doorType = "horizontal2";
 
   } else if (doorConfigPicker == 2) {
     // skip a random door
@@ -840,7 +842,7 @@ function scene10() {
 
       window.setTimeout( function() {
         scene10done();
-      }, random(5500,6000)); // need to fix this (i.e. change time based on if there was a missing column or single door which increases the time before the end)
+      }, random(7000,7000)); // need to fix this (i.e. change time based on if there was a missing column or single door which increases the time before the end)
 
     }, delayTime);
   }
@@ -903,7 +905,7 @@ function scene10done() {
 }
 
 function pickNextScene( fromSceneId ) {
-  var sceneArr = ['scene1','scene2','scene3','scene4','scene5','scene6a','scene6','scene7','scene8','scene9','scene10'];
+  var sceneArr = ['scene1','scene2','scene3','scene4','scene5','scene6a','scene6','scene7','scene8','scene9','scene10','scene10'];
   var nextSceneId;
   while ( !nextSceneId ) {
     var i = floor(random(sceneArr.length));
@@ -959,6 +961,12 @@ function DoorMgr() {
 }
 
 DoorMgr.prototype = {
+  randomDoorType: function() {
+    //doorSoundsByType
+    var doorSoundTypes = Object.keys(doorSoundsByType);
+    var rIndex = floor(random(doorSoundTypes.length));
+    return doorSoundTypes[rIndex];
+  },
   findEmptySpace: function(doorSpaceReq) {
     var rxIn = doorSpaceReq.x;
     var ryIn = doorSpaceReq.y;
