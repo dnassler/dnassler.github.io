@@ -175,6 +175,7 @@ function scene0() {
   //scene7();
   scene6a();
   //scene10();
+  //scene8();
 }
 
 function scene1() {
@@ -598,16 +599,24 @@ function scene7done() {
 function scene8() {
   var doorType = null;
 
+  var configMode = floor(random(10))<5 ? 0 : 1;
+
   var doorYcenter = height/2 - DOOR_HEIGHT/2;
   var numDoors = 0;
   var numRows = 6;
-  var numDoorsPerRow = 6;
+  var numDoorsPerRow = (configMode==0) ? 6 : 8;
   var dArr = [];
 
   for ( var i=0; i<numRows*numDoorsPerRow; i++ ) {
 
     var rowNum = floor(i / numDoorsPerRow);
     var colNum = i % numDoorsPerRow;
+    if ( configMode == 1 ) {
+      // skip middle 2 columns
+      if ( colNum == 3 || colNum == 4) {
+        continue;
+      }
+    }
     var doorX = (colNum * DOOR_WIDTH) - (numDoorsPerRow*DOOR_WIDTH/2) + width/2;
     var doorY = rowNum*DOOR_HEIGHT - numRows*DOOR_HEIGHT/2 + height/2;
 
