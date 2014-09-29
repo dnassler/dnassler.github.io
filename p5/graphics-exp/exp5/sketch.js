@@ -733,7 +733,7 @@ function scene10() {
   var skipColNum;
   var skipRowNum;
   var doorConfigMode = 0;
-  var doorConfigPicker = 2;//floor(random(4));
+  var doorConfigPicker = floor(random(4));
   // numRows=5;
   // numDoorsPerRow=10;
 
