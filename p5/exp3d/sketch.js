@@ -1,4 +1,6 @@
 
+var isFullscreen = false;
+
 window.onresize = function() {
   checkOrientation();
 };
@@ -32,11 +34,10 @@ var checkOrientation = function() {
   console.log('correctedWidth='+dw+', correctedHeight='+dh+', w='+w+', h='+h+', displayWidth='+dw0+", displayHeight="+dh0+", window.innerWidth="+window.innerWidth+", window.innerHeight="+window.innerHeight);
   return {width:dw,height:dh};
 };
-var isFullscreen = false;
 
 function setup() {
+  isFullscreen = (typeof window.orientation !== 'undefined') ? true: fullscreen(); // if iphone/ipad/iOS fullscreen doesn't work
   var displaySize = checkOrientation();
-  isFullscreen = false;//fullscreen();
   createCanvas(displaySize.width, displaySize.height);
   angleMode(DEGREES);
 }
@@ -79,8 +80,9 @@ function draw() {
   if ( !isFullscreen ) {
     stroke(255);
     fill(255);
-    textSize(50);
-    text("Click to View Properly",100,100);
+    textSize(20);
+    textAlign(CENTER);
+    text("click to view fullscreen properly",width/2,height/2);
   }
 
   // if ( t0 + linesSettleTimeMS < millis() ) {
