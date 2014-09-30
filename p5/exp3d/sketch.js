@@ -1,17 +1,57 @@
+
+window.onresize = function() {
+  checkOrientation();
+};
+var checkOrientation = function() {
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  var dw0 = displayWidth;
+  var dh0 = displayHeight;
+  var dw;
+  var dh;
+  if ( w > h ) {
+    console.log('landscape');
+    // due to bug displayWidth always shows the portrait width so double check the dw0/dh0
+    if ( dw0 > dh0 ) {
+      dw = dw0;
+      dh = dh0;
+    } else {
+      dw = dh0;
+      dh = dw0;
+    }
+  } else {
+    console.log('portrait');
+    if ( dw0 < dh0 ) {
+      dw = dw0;
+      dh = dh0;
+    } else {
+      dw = dh0;
+      dh = dw0;
+    }
+  }
+  console.log('correctedWidth='+dw+', correctedHeight='+dh+', w='+w+', h='+h+', displayWidth='+dw0+", displayHeight="+dh0+", window.innerWidth="+window.innerWidth+", window.innerHeight="+window.innerHeight);
+  return {width:dw,height:dh};
+};
+var isFullscreen = false;
+
 function setup() {
-
-  createCanvas(displayWidth, displayHeight);
-  //createCanvas(windowWidth, windowHeight);
-
+  var displaySize = checkOrientation();
+  isFullscreen = false;//fullscreen();
+  createCanvas(displaySize.width, displaySize.height);
   angleMode(DEGREES);
 }
-function mousePressed() {
-  if ( !fullscreen() ) {
-    fullscreen(true);
-  } else {
-    //save('myFile.png');
+
+var mousePressed = touchStarted = function() {
+  console.log("touch/mouse");
+  if ( !isFullscreen ) {
+    isFullscreen = true;
+    try {
+      fullscreen(isFullscreen);
+    } catch ( ex1 ) {
+      console.log('error occurred:'+ex1);
+    }
   }
-}
+};
 
 var t0 = 0;
 var tDiff = 0;
@@ -32,9 +72,16 @@ var boxColor = 255;
 var lineLengthMode = 0;
 
 function draw() {
+
   // put drawing code here
   background(0);
 
+  if ( !isFullscreen ) {
+    stroke(255);
+    fill(255);
+    textSize(50);
+    text("Click to View Properly",100,100);
+  }
 
   // if ( t0 + linesSettleTimeMS < millis() ) {
   if ( millis() > changeLinesTime ) {
@@ -92,15 +139,6 @@ function draw() {
   if ( boxColor < 0 ) {
     boxColor = 0;
   }
-
-  if ( !fullscreen() ) {
-    stroke(255);
-    fill(255);
-    textSize(50);
-    text("Click to View Properly",100,100);
-
-  }
-
 
   // draw lines
 
