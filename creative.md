@@ -13,3 +13,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is ja
   * [Experiment 5 - twirling, shifting structures]({{site.url}}/p5/graphics-exp/exp4/index.html)
   * [Experiment 6 - creaky doors]({{site.url}}/p5/graphics-exp/exp5/index.html)
   * [Experiment 7 - triangular patterns]({{site.url}}/p5/graphics-exp/exp6/index.html)
+  * [Experiment 7b - repeated patterns with lines/boxes]({{site.url}}/p5/graphics-exp/exp6b/index.html)
