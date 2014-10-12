@@ -79,6 +79,9 @@ function setup() {
 
   //sounds[0].play();
 
+  globalMaxR = height / 2;
+  globalMinR = globalMaxR /2;
+
   for ( var rowNum = 0; rowNum<numRows; rowNum++ ) {
     for ( var i=0; i<numBubblesPerRow*2; i++ ) {
       bubbles.push( new Bubble((i%numBubblesPerRow)*width/numBubblesPerRow, numRows===1 ? height/2 : height/(numRows-1)*rowNum, random(100), i) );
