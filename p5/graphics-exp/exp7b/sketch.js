@@ -171,7 +171,7 @@ function ImgMgr() {
     order: 0,
     color: color(50),
     height: height,
-    width: 100,
+    width: height*0.1,
     pillarCount: 0,
     pillarLightColor: color(50,50,255,50),
     pillarLightIllumColor: color(100,100,200,50),
@@ -210,7 +210,7 @@ function ImgMgr() {
     order: 0,
     color: color(100),
     height: height,
-    width: 100
+    width: height*0.1
   };
 
   var stationLight = {
@@ -466,7 +466,7 @@ function ImgMgr() {
         noStroke();
 
         fill(50);
-        var topSupportY = height/5+20;
+        var topSupportY = height/5;
         rect(0,0,width,topSupportY);
 
         fill( thing.color );
@@ -548,7 +548,7 @@ function ImgMgr() {
         noStroke();
 
         fill(50);
-        var topSupportY = height/5+20;
+        var topSupportY = height/5;
         rect(0,0,width,topSupportY);
 
         fill( thing.color );
