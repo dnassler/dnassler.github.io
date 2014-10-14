@@ -16,4 +16,5 @@ The following were made using the [p5.js](http://p5js.org) framework which is ja
   * [Experiment 7b - repeated patterns with lines/boxes]({{site.url}}/p5/graphics-exp/exp6b/index.html)
   * [Experiment 8 - subway experience with sounds (abstract)]({{site.url}}/p5/graphics-exp/exp6b2/index.html)
   	* some sounds used were excerpts from the following:  Freesound.org - "Toronto Subway - Wellesley to Osgoode" by lonemonk, and Freesound.org - "Subway NY inside speaker door o-c" by beman87 
-  * [Experiment 8b - subway literal experience (work-in-progress)]({{site.url}}/p5/graphics-exp/exp7b/index.html)
+  * [Experiment 8b - subway animation, less abstract (work-in-progress)]({{site.url}}/p5/graphics-exp/exp7b/index.html)
+  * [Experiment 9 - video image grid, changing]({{site.url}}/p5/graphics-exp/exp9/index.html)
