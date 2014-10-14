@@ -18,3 +18,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is ja
   	* some sounds used were excerpts from the following:  Freesound.org - "Toronto Subway - Wellesley to Osgoode" by lonemonk, and Freesound.org - "Subway NY inside speaker door o-c" by beman87 
   * [Experiment 8b - subway animation, less abstract (work-in-progress)]({{site.url}}/p5/graphics-exp/exp7b/index.html)
   * [Experiment 9 - video image grid, changing]({{site.url}}/p5/graphics-exp/exp9/index.html)
+  * [Experiment 9b - video image grid with marker, changing]({{site.url}}/p5/graphics-exp/exp9b/index.html)
