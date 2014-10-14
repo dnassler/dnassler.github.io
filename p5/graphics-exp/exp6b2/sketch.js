@@ -1,4 +1,5 @@
-var globalSpeed = 0.7;
+//var globalSpeed = 0.7;
+var globalSpeed = 0.26;
 
 window.onresize = function() {
   checkOrientation();
