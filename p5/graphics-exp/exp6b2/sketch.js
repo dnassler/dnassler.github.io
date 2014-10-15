@@ -7,14 +7,15 @@ window.onresize = function() {
 var checkOrientation = function() {
   var w = window.innerWidth;
   var h = window.innerHeight;
+  if ( window.orientation !== undefined ) {
+    return {width:w,height:h};
+  }
   var dw0 = displayWidth;
   var dh0 = displayHeight;
   var dw;
   var dh;
-  var orientationInfo = {};
   if ( w > h ) {
     console.log('landscape');
-    orientationInfo.isLandscape = true;
     // due to bug displayWidth always shows the portrait width so double check the dw0/dh0
     if ( dw0 > dh0 ) {
       dw = dw0;
@@ -25,7 +26,6 @@ var checkOrientation = function() {
     }
   } else {
     console.log('portrait');
-    orientationInfo.isLandscape = false;
     if ( dw0 < dh0 ) {
       dw = dw0;
       dh = dh0;
@@ -35,9 +35,7 @@ var checkOrientation = function() {
     }
   }
   console.log('correctedWidth='+dw+', correctedHeight='+dh+', w='+w+', h='+h+', displayWidth='+dw0+", displayHeight="+dh0+", window.innerWidth="+window.innerWidth+", window.innerHeight="+window.innerHeight);
-  orientationInfo.width = dw;
-  orientationInfo.height = dh;
-  return orientationInfo;
+  return {width:dw,height:dh};
 };
 var isFullscreen = false;
 

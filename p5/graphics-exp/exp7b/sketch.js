@@ -5,6 +5,9 @@ window.onresize = function() {
 var checkOrientation = function() {
   var w = window.innerWidth;
   var h = window.innerHeight;
+  if ( window.orientation !== undefined ) {
+    return {width:w,height:h};
+  }
   var dw0 = displayWidth;
   var dh0 = displayHeight;
   var dw;
@@ -54,18 +57,25 @@ function setup() {
 //   }
 // };
 
+var showSpeedControl = true;
+var showSpeedControlTimer;
+
 function draw() {
 
   // put drawing code here
   background(0);
 
-  if ( !isFullscreen ) {
-    stroke(255);
+  if ( window.innerWidth < window.innerHeight ) {
+    noLoop();
+    stroke(0);
     fill(255);
-    textSize(50);
+    textSize(20);
     textAlign(CENTER);
-    text("click to view fullscreen properly",width/2,height/2);
+    text("this sketch requires LANDSCAPE orientation",window.innerWidth/2,window.innerHeight/2);
+    return;
   }
+
+  push();
 
   ImgMgr.instance.update();
   ImgMgr.instance.draw();
@@ -74,6 +84,8 @@ function draw() {
     drawSpeedControl();
   }
   
+  pop();
+
   if ( newGlobalSpeed > 0 ) {
     globalSpeed += (newGlobalSpeed - globalSpeed)/100;
   } else if ( newGlobalSpeed == 0 && millis() < timeBrakesStarted + timeToStopMS ) {
@@ -81,6 +93,28 @@ function draw() {
     globalSpeed = Math.easeOutCubic( 
       millis() - timeBrakesStarted, speedWhenBrakesStarted, -speedWhenBrakesStarted, 
       timeToStopMS );
+  }
+
+  if ( !isFullscreen ) {
+    stroke(0);
+    fill(255);
+    textSize(50);
+    textAlign(CENTER);
+    text("click to view fullscreen properly",window.innerWidth/2,window.innerHeight/2);
+  } else {
+    if ( showSpeedControl ) {
+      if ( !showSpeedControlTimer ) {
+        showSpeedControlTimer = millis();
+      }
+      stroke(0);
+      fill(255);
+      textSize(40);
+      textAlign(CENTER);
+      text("control speed by touch/click and swipe up/down",window.innerWidth/2,window.innerHeight/2);
+      if ( millis() - showSpeedControlTimer > 5000 ) {
+        showSpeedControl = false;
+      }
+    }
   }
 
 }
