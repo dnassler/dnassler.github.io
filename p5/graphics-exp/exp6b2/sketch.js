@@ -11,8 +11,10 @@ var checkOrientation = function() {
   var dh0 = displayHeight;
   var dw;
   var dh;
+  var orientationInfo = {};
   if ( w > h ) {
     console.log('landscape');
+    orientationInfo.isLandscape = true;
     // due to bug displayWidth always shows the portrait width so double check the dw0/dh0
     if ( dw0 > dh0 ) {
       dw = dw0;
@@ -23,6 +25,7 @@ var checkOrientation = function() {
     }
   } else {
     console.log('portrait');
+    orientationInfo.isLandscape = false;
     if ( dw0 < dh0 ) {
       dw = dw0;
       dh = dh0;
@@ -32,7 +35,9 @@ var checkOrientation = function() {
     }
   }
   console.log('correctedWidth='+dw+', correctedHeight='+dh+', w='+w+', h='+h+', displayWidth='+dw0+", displayHeight="+dh0+", window.innerWidth="+window.innerWidth+", window.innerHeight="+window.innerHeight);
-  return {width:dw,height:dh};
+  orientationInfo.width = dw;
+  orientationInfo.height = dh;
+  return orientationInfo;
 };
 var isFullscreen = false;
 
@@ -147,18 +152,30 @@ function SoundControl() {
 //   //   ImgMgr.instance.drawMode = 'triangle';
 //   // }
 // };
+var showSpeedControl = true;
+var showSpeedControlTimer;
 
 function draw() {
 
   // put drawing code here
   background(0);
 
-  if ( !isFullscreen ) {
+  if ( window.innerWidth < window.innerHeight ) {
+    noLoop();
+    stroke(0);
+    fill(255);
+    textSize(20);
+    textAlign(CENTER);
+    text("this sketch requires LANDSCAPE orientation",window.innerWidth/2,window.innerHeight/2);
+    return;
+  }
+  if ( !ImgMgr.instance.isStarted() ) {
     stroke(0);
     fill(255);
     textSize(50);
     textAlign(CENTER);
-    text("click to view fullscreen properly",window.innerWidth/2,window.innerHeight/2);
+    text("touch to start",window.innerWidth/2,window.innerHeight/2);
+    return;
   }
 
   ImgMgr.instance.update();
@@ -168,9 +185,37 @@ function draw() {
     drawSpeedControl();
   }
 
+  if ( !isFullscreen ) {
+    stroke(0);
+    fill(255);
+    textSize(50);
+    textAlign(CENTER);
+    text("click to view fullscreen properly",window.innerWidth/2,window.innerHeight/2);
+  } else {
+    if ( showSpeedControl ) {
+      if ( !showSpeedControlTimer ) {
+        showSpeedControlTimer = millis();
+      }
+      stroke(0);
+      fill(255);
+      textSize(40);
+      textAlign(CENTER);
+      text("control speed by touch/click and swipe up/down",window.innerWidth/2,window.innerHeight/2);
+      if ( millis() - showSpeedControlTimer > 5000 ) {
+        showSpeedControl = false;
+      }
+    }
+  }
+
+
 }
 
 function ImgMgr() {
+
+  var isMobileDevice = function() {
+    return window.orientation !== undefined;
+  }
+  var _isStarted = !isMobileDevice();
 
   var iBufSize;
   if ( width > height ) {
@@ -278,18 +323,30 @@ function ImgMgr() {
 
   };
 
-
   var sourceImage1 = new SourceImage(gridSize);
   this.createNextFrame = function() {
     sourceImage1.update();
     drawIntoBuf( sourceImage1.getImage() );
-  }
+  };
+
+  this.isStarted = function() {
+    return _isStarted;
+  };
+  this.start = function() {
+    _isStarted = true;
+  };
 
 };
 ImgMgr.prototype.update = function(srcImg) {
+  if ( !this.isStarted() ) {
+    return;
+  }
   this.createNextFrame();
 };
 ImgMgr.prototype.draw = function() {
+  if ( !this.isStarted() ) {
+    return;
+  }
   this.drawFramesToGrid2();
 };
 
@@ -441,6 +498,10 @@ function mousePressed() {
 };
 
 var pointerStarted = function(py) {
+  if ( !ImgMgr.instance.isStarted() ) {
+    ImgMgr.instance.start();
+    return;
+  }
   displaySpeedControl = true;
   pointerStartedY = py;
   globalSpeed0 = globalSpeed;
