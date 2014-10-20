@@ -20,3 +20,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is a 
   * [Experiment 9 - video image grid, changing]({{site.url}}/p5/graphics-exp/exp9/index.html)
   * [Experiment 9b - video image grid with marker, changing]({{site.url}}/p5/graphics-exp/exp9b/index.html)
   * [Experiment 11b - lines rotated controllable via mouse x-coordinate]({{site.url}}/p5/graphics-exp/exp11b/index.html)
+  * [Experiment 11c - moon-like phases]({{site.url}}/p5/graphics-exp/exp11c/index.html)
