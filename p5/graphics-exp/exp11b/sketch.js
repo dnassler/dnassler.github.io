@@ -1,5 +1,5 @@
 //var globalSpeed = 0.7;
-var globalSpeed = 1;
+var globalSpeed = .5;
 
 window.onresize = function() {
   checkOrientation();
@@ -307,6 +307,33 @@ function ImgMgr() {
   //   }
   // };
 
+  var nextGridRotationAt = millis();
+  var startGridRotationAt;
+  var durationGridRotation;
+  var fromGridRotation;
+  var toGridRotation;
+  var currentGridRotation = 0;
+  var isGridRotating = false;
+
+  this.updateGridRotation = function() {
+    var currentTime = millis();
+    if ( !isGridRotating && currentTime > nextGridRotationAt ) {
+      isGridRotating = true;
+      startGridRotationAt = currentTime;
+      durationGridRotation = random(500,1000);
+      fromGridRotation = currentGridRotation;
+      toGridRotation = random(-TWO_PI,TWO_PI);
+    }
+    if ( isGridRotating ) {
+      if ( currentTime > startGridRotationAt + durationGridRotation ) {
+        isGridRotating = false;
+        nextGridRotationAt = currentTime + random(1000,2000);
+      } else if ( currentTime > startGridRotationAt ) {
+        currentGridRotation = Math.easeInOutCubic( currentTime - startGridRotationAt, fromGridRotation, toGridRotation, durationGridRotation );
+      }
+    }
+  };
+
   var gridPointAngle = [];
   var gridPointScale = [];
 
@@ -335,13 +362,15 @@ function ImgMgr() {
     push();
     if ( window.devicePixelRatio !== 1 ) {
       translate( width/2, height/2 );
-      rotate(TWO_PI*mouseX/width);
+      //rotate(TWO_PI*mouseX/width);
+      rotate( currentGridRotation );
       translate( -width/2, -(height*stretchHeightFactor/2) );
       scale( window.devicePixelRatio );
       image( gFinal, 0, 0, gFinal.width, gFinal.height*stretchHeightFactor );
     } else {
       translate( width/2, height/2 );
-      rotate(TWO_PI*mouseX/width);
+      //rotate(TWO_PI*mouseX/width);
+      rotate( currentGridRotation );
       translate( -width/2, -(height*stretchHeightFactor/2) );
       image( gFinal, 0, 0, gFinal.width, gFinal.height*stretchHeightFactor );
     }
@@ -372,6 +401,7 @@ ImgMgr.prototype.update = function(srcImg) {
     return;
   }
   this.createNextFrame();
+  this.updateGridRotation();
 };
 ImgMgr.prototype.draw = function() {
   if ( !this.isStarted() ) {
@@ -506,8 +536,8 @@ function SourceImage(sizeIn) {
   this.update = function() {
 
     //console.log('lightXvel='+lightXvel+', globalSpeed='+globalSpeed);
-    lightX += lightXvel * globalSpeed;
-    lightY += lightYvel * globalSpeed;
+    lightX += lightXvel * globalSpeed * 2;
+    lightY += lightYvel * globalSpeed * 2;
 
     if ( lightMovedOffscreen() ) {
       
