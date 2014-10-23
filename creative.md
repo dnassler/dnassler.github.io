@@ -21,3 +21,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is a 
   * [Experiment 9b - video image grid with marker, changing]({{site.url}}/p5/graphics-exp/exp9b/index.html)
   * [Experiment 11b - lines rotated automatically]({{site.url}}/p5/graphics-exp/exp11b/index.html)
   * [Experiment 11c - moon-like phases]({{site.url}}/p5/graphics-exp/exp11c/index.html)
+  * [Experiment 13 - black and white rotating boxes with exclusion blending]({{site.url}}/p5/graphics-exp/exp13/index.html)
