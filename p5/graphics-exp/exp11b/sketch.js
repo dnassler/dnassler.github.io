@@ -62,14 +62,18 @@ function preload() {
 }
 
 function setup() {
+
 	isFullscreen = (typeof window.orientation !== 'undefined') ? true: fullscreen(); // if iphone/ipad/iOS fullscreen(true) doesn't work
+
   var displaySize = checkOrientation();
+
   createCanvas(displaySize.width, displaySize.height);
 
   angleMode(RADIANS);
 
   ImgMgr.instance = new ImgMgr();
   //ImgMgr.instance.drawMode = 'lines';
+
 
   processSoundFiles();
 
@@ -360,7 +364,7 @@ function ImgMgr() {
 
     var stretchHeightFactor = 1;
     push();
-    if ( window.devicePixelRatio !== 1 ) {
+    if ( false && window.devicePixelRatio !== 1 ) {
       translate( width/2, height/2 );
       //rotate(TWO_PI*mouseX/width);
       rotate( currentGridRotation );
