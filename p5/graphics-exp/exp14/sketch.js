@@ -407,7 +407,7 @@ function Box( shapeMgr ) {
       _points[LOWER_RIGHT].x, _points[LOWER_RIGHT].y,
       _points[LOWER_LEFT].x, _points[LOWER_LEFT].y );
     if ( _isChangingContent() ) {
-      fill(255,20);
+      fill(255,random(5));
       if ( _content.lineX !== undefined ) {
         rect( _points[UPPER_LEFT].x + _content.lineX, _points[UPPER_LEFT].y, _sizeWithScale.x/10, _sizeWithScale.y );
       } else {
