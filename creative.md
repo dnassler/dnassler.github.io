@@ -24,3 +24,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is a 
   * [Experiment 13 - black and white rotating boxes with exclusion blending]({{site.url}}/p5/graphics-exp/exp13/index.html)
   * [Experiment 13b - black and white animated with shadows and blue]({{site.url}}/p5/graphics-exp/exp13b/index.html)
   * [Experiment 14 - jiggling boxes]({{site.url}}/p5/graphics-exp/exp14/index.html)
+  * [Experiment 14b - jiggling boxes, multiple predetermined color palettes]({{site.url}}/p5/graphics-exp/exp14b/index.html)
