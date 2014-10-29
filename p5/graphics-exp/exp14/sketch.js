@@ -1,6 +1,6 @@
 var debugMode = 0;
 
-
+var displayMode;
 var _shapeMgr;
 
 function setup() {
@@ -8,7 +8,8 @@ function setup() {
 
   background(120);
 
-  _shapeMgr = new ShapeMgr();
+  displayMode = mode.SLOW_JITTER;
+  _shapeMgr = new ShapeMgr( displayMode );
 
 }
 
@@ -22,12 +23,17 @@ function draw() {
   _shapeMgr.draw();
 }
 
-function ShapeMgr() {
+function ShapeMgr( displayMode ) {
 
   var _self = this;
 
   var _boxes;
   var _numBoxes;
+
+  var _displayMode = displayMode;
+  this.getDisplayMode = function() {
+    return _displayMode;
+  };
 
   var alpha = 200;
   var _colorArr = [];
@@ -86,6 +92,14 @@ function ShapeMgr() {
 
   };
 
+  this.modeChange = function( displayMode ) {
+    _displayMode = displayMode;
+    for (var i=0; i<_numBoxes; i++) {
+      var b = _boxes[i];
+      b.setBoxDisplayMode( displayMode );
+    }
+  };
+
 }
 
 var BoxTypes = {
@@ -98,6 +112,8 @@ var LOWER_LEFT = 3;
 
 function Box( shapeMgr ) {
   
+  var _self = this;
+
   var _boxShapeMgr = shapeMgr;
 
   var _pos = new p5.Vector();
@@ -120,6 +136,46 @@ function Box( shapeMgr ) {
   var _color;
 
   var _type;
+
+  var _lastDisplayMode;
+  this.setBoxDisplayMode = function( displayMode ) {
+    if ( displayMode === mode.SLOW_JITTER ) {
+      // start slow jitter
+      startSlowJitter();
+    } else {
+      if ( _lastDisplayMode === mode.SLOW_JITTER ) {
+        // stop slow jitter
+        stopSlowJitter();
+      }
+    }
+    _lastDisplayMode = displayMode;
+  }
+
+  var _slowJitterTweenArr = [];
+  var startSlowJitter = function() {
+    for ( var i=0; i<4; i++ ) {
+      var tween = new TWEEN.Tween(_pointsOffset[i]);
+      _pickNewPointOffset( tween, _pointsOffset[i] );
+      _slowJitterTweenArr.push( tween );
+    }
+  };
+  var stopSlowJitter = function() {
+    _slowJitterTweenArr.forEach( function( tween ) {
+      tween.stop();
+    });
+    _slowJitterTweenArr = [];
+  };
+
+  var _pickNewPointOffset = function( tween, point ) {
+    tween.to({x: randomGaussian(0,_pointVarianceLimit*2), y: randomGaussian(0,_pointVarianceLimit*2)}, random(500,1000) );
+    tween.easing(TWEEN.Easing.Quadratic.InOut);
+    tween.onComplete( function() {
+      _pickNewPointOffset( tween, point );
+    });
+    //tween.delay(random(500,1000));
+    tween.start();
+  };
+
 
   // var alpha = 200;
   // var _colorArr = [];
@@ -292,6 +348,7 @@ function Box( shapeMgr ) {
     _updateSize();
     _resetPositionOffset( attr );
     _resetPointOffsetRandom( attr );
+    _self.setBoxDisplayMode( shapeMgr.getDisplayMode() );
     _pickColor( attr );
     _angle = 0;
   };
@@ -333,7 +390,9 @@ function Box( shapeMgr ) {
     _updateScale();
     _updateSize();
     //_updatePositionOffsetRandom();
-    _updatePointOffsetRandom();
+    if ( _lastDisplayMode === mode.NORMAL ) {
+      _updatePointOffsetRandom();
+    }
     _updatePoints();
   };
 
@@ -360,3 +419,21 @@ function Box( shapeMgr ) {
   }
 
 }
+
+// --
+var mode = {
+  NORMAL: 0,
+  STILL: 1,
+  SLOW_JITTER: 2
+};
+var modeArr = [ mode.NORMAL, mode.STILL, mode.SLOW_JITTER ];
+function mouseClicked() {
+  displayMode += 1;
+  if ( displayMode >= modeArr.length ) {
+    displayMode = 0;
+  }
+  _shapeMgr.modeChange( displayMode );
+  // var event = new Event('displayModeChange', {displayMode: displayMode});
+
+}
+
