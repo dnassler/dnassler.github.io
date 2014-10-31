@@ -223,14 +223,19 @@ function ShapeMgr( displayMode ) {
         if ( b.popOutTransition ) {
           transitioningBoxesArr.push(b.popOutTransition);
         }
-        // if ( b.changeBoxAttrTransition ) {
-        //   transitioningBoxesArr.push(b.changeBoxAttrTransition);
-        // }
+        if ( b.changeBoxAttrTransition ) {
+          transitioningBoxesArr.push(b.changeBoxAttrTransition);
+        }
       });
-      Promise.all( transitioningBoxesArr ).then(function(){
+      if ( transitioningBoxesArr.length === 0 ) {
         reset();
-      });
-      //reset();
+      } else {
+        Promise.all( transitioningBoxesArr ).then(function(){
+          window.setTimeout( function() {
+            reset();
+          }, random(1000,3000));
+        });
+      }
     }, random(5000,10000) );
 
   };
@@ -522,10 +527,13 @@ function Box( shapeMgr ) {
 
   var _pickNewPositionOffset = function() {
     var tween = new TWEEN.Tween(_posOffset);
+    // var tweenDurationMin = _attr._scale * 1000;
+    // var tweenDurationMax = ( _attr._scale * 2 ) * 1000;
+    var tweenDuration = random(3000,5000);
     if ( random(10) < 5 ) {
-      tween.to({x: random( -_posOffsetVarianceLimit*_sizeWithScale.x, _posOffsetVarianceLimit*_sizeWithScale.x )}, random(1000,3000) );
+      tween.to({x: random( -_posOffsetVarianceLimit*_sizeWithScale.x, _posOffsetVarianceLimit*_sizeWithScale.x )}, tweenDuration );
     } else {
-      tween.to({y: random( -_posOffsetVarianceLimit*_sizeWithScale.y, _posOffsetVarianceLimit*_sizeWithScale.y )}, random(1000,3000));
+      tween.to({y: random( -_posOffsetVarianceLimit*_sizeWithScale.y, _posOffsetVarianceLimit*_sizeWithScale.y )}, tweenDuration );
     }
     tween.easing(TWEEN.Easing.Back.InOut);
     tween.onComplete( function() {
