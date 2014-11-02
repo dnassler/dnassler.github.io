@@ -3,6 +3,11 @@ var debugMode = 0;
 var displayMode;
 var _shapeMgr;
 
+// var testTweenObj = {_alpha:200};
+// var testTweenOut = false;
+
+// var testTweenObj2 = {x:0};
+
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
 
@@ -11,11 +16,37 @@ function setup() {
   displayMode = mode.SLOW_JITTER;
   _shapeMgr = new ShapeMgr( displayMode );
 
+  // var tween = new TWEEN.Tween( testTweenObj );
+  // tween.to({_alpha:0}, 2000);
+  // tween.easing(TWEEN.Easing.Quadratic.InOut);
+  // tween.onComplete(function() {
+  //   console.log('test tween completed');
+  //   testTweenOut = true;
+  //   tween2.stop();
+  // });
+  // tween.onStop(function() {
+  //   console.log('test tween stopped');
+  // });
+  // console.log('test tween STARTED');
+  // tween.start();
+
+  // var tween2 = new TWEEN.Tween( testTweenObj2 );
+  // tween2.to({x:100}, 4000);
+  // tween2.easing(TWEEN.Easing.Quadratic.InOut);
+  // tween2.onComplete(function() {
+  //   console.log('test tween2 completed');
+  // });
+  // tween2.onStop(function() {
+  //   console.log('test tween2 stopped');
+  // });
+  // console.log('test tween2 STARTED');
+  // tween2.start();
+
+
 }
 
 function draw() {
   background(120);
-  //background(50,80,120);
 
   TWEEN.update();
 
@@ -29,6 +60,8 @@ function ShapeMgr( displayMode ) {
 
   var _boxes;
   var _numBoxes;
+
+  var _boxesOutArr;
 
   var _displayMode = displayMode;
   this.getDisplayMode = function() {
@@ -84,7 +117,8 @@ function ShapeMgr( displayMode ) {
       color(85,107,47),
       color(255,228,196),
       color(240,248,255),
-      color(255,255,224)
+      color(255,255,224),
+      color(20)
     ],
     redYellow1: [
       color(219,112,147),
@@ -118,6 +152,13 @@ function ShapeMgr( displayMode ) {
       color(200,180,50),
       color(20,150,220)
     ],
+    basicWhiteBlackBlueYellow2: [
+      color(220),
+      color(10),
+      color(85),
+      color(220,200,50),
+      color(0,120,220)
+    ],
     redWhiteAndGrey: [
       color(189,183,107), //darkkhaki
       color(230,230,250), //lavender
@@ -143,12 +184,13 @@ function ShapeMgr( displayMode ) {
       color(255,228,225), //mistyrose
       //color(255,0,255), //fuchsia
       color(0,139,139), //darkcyan
-      color(255)
+      color(255),
+      color(15)
     ]
     
   };
 
-  var _currentColorCombination = undefined;//'greyCoral';
+  var _currentColorCombination = 'basicWhiteBlackBlueYellow2';
   this.changeColorCombination = function() {
     var allColorComboNames = Object.keys(_colorCombinations);
     var randomColorIndex = floor(random(allColorComboNames.length));
@@ -192,26 +234,29 @@ function ShapeMgr( displayMode ) {
   // };
 
   var _resetColorsWhenZero = 5;
+  var _waitingToReset = false;
 
   var reset = function() {
 
+    _waitingToReset = false;
     TWEEN.removeAll();
 
     _resetColorsWhenZero -= 1;
     if ( _resetColorsWhenZero <= 0 ) {
-      _resetColorsWhenZero = random(2,5);
+      _resetColorsWhenZero = floor(random(1,3));
       _self.changeColorCombination();
     }
 
     _boxes = [];
+    _boxesOutArr = [];
     _numBoxes = floor(random(10,30));
     for (var i=0; i<_numBoxes; i++) {
       var b = new Box( _self );
-      if ( random(10) < 5 ) {
-        b.keepMoving();
-      } else if ( random(10) < 5 ) {
-        b.keepChangingContents();
-      }
+      // if ( random(10) < 5 ) {
+      //   b.keepMoving();
+      // } else if ( random(10) < 5 ) {
+      //   b.keepChangingContents();
+      // }
       _boxes.push( b );
     }
 
@@ -230,31 +275,48 @@ function ShapeMgr( displayMode ) {
       if ( transitioningBoxesArr.length === 0 ) {
         reset();
       } else {
+        _waitingToReset = true;
+        console.log('waiting to reset');
         Promise.all( transitioningBoxesArr ).then(function(){
+          console.log('ready to reset... random wait');
           window.setTimeout( function() {
+            _waitingToReset = false;
+            console.log('resetting the scene!!!!!');
             reset();
           }, random(1000,3000));
         });
       }
     }, random(5000,10000) );
+    //}, random(5000,10000) );
 
   };
 
   reset();
 
-  var popOut = function() {
+  // this.boxPopOutCompleted = function( boxOut ) {
+  //   _boxesOutArr.push( boxOut );
+  // };
 
-    TWEEN.removeAll();
+  // var popOut = function() {
 
-    var popOutArr = [];
-    for (var i=0; i<_numBoxes; i++) {
-      var b = _boxes[i];
-      popOutArr.push( b.popOut() );
+  //   TWEEN.removeAll();
+
+  //   var popOutArr = [];
+  //   for (var i=0; i<_numBoxes; i++) {
+  //     var b = _boxes[i];
+  //     popOutArr.push( b.popOut() );
+  //   }
+  //   Promise.all(popOutArr).then(function(popOutResolveArr){
+  //     reset();
+  //   });
+  // };
+
+  this.reintroduceBoxIsOk = function( box ) {
+    if ( !_waitingToReset ) {
+      return true;
     }
-    Promise.all(popOutArr).then(function(popOutResolveArr){
-      reset();
-    });
-  };
+    return false;
+  }
 
   this.update = function() {
   
@@ -298,8 +360,8 @@ function Box( shapeMgr ) {
 
   var _boxShapeMgr = shapeMgr;
 
-  var _timeToPopOut = random(1)<0.5 ? millis() + random(2000,20000) : undefined;
-  var _timeToChangeBox = random(1)<0.2 ? millis() + random(2000,5000) : undefined;
+  var _timeToPopOut = undefined;// random(1)<0.5 ? millis() + random(2000,20000) : undefined;
+  var _timeToChangeBox = undefined;//random(1)<0.2 ? millis() + random(2000,5000) : undefined;
   var _isOut = false;
 
   var _pos = new p5.Vector();
@@ -332,25 +394,25 @@ function Box( shapeMgr ) {
   this.setBoxDisplayMode = function( displayMode ) {
     if ( displayMode === mode.SLOW_JITTER ) {
       // start slow jitter
-      startSlowJitter();
+      _startSlowJitter();
     } else {
       if ( _lastDisplayMode === mode.SLOW_JITTER ) {
         // stop slow jitter
-        stopSlowJitter();
+        _stopSlowJitter();
       }
     }
     _lastDisplayMode = displayMode;
   }
 
   var _slowJitterTweenArr = [];
-  var startSlowJitter = function() {
+  var _startSlowJitter = function() {
     for ( var i=0; i<4; i++ ) {
       var tween = new TWEEN.Tween(_pointsOffset[i]);
       _pickNewPointOffset( tween, _pointsOffset[i] );
       _slowJitterTweenArr.push( tween );
     }
   };
-  var stopSlowJitter = function() {
+  var _stopSlowJitter = function() {
     _slowJitterTweenArr.forEach( function( tween ) {
       tween.stop();
     });
@@ -361,18 +423,22 @@ function Box( shapeMgr ) {
     var varianceLimit = _pointVarianceLimit * 2;
     var variancePercentOfBoxWidth = varianceLimit / _sizeWithScale.y;
     if ( variancePercentOfBoxWidth > 0.02 ) {
-      varianceLimit = 0.02 * _sizeWithScale.x;
+      varianceLimit = 0.02 * _sizeWithScale.y;
     }
     tween.to({x: randomGaussian(0,varianceLimit), y: randomGaussian(0,varianceLimit)}, random(500,1000) );
     tween.easing(TWEEN.Easing.Quadratic.InOut);
     tween.onComplete( function() {
-      _pickNewPointOffset( tween, point );
+      if ( !_isOut ) {
+        _pickNewPointOffset( tween, point );
+      }
     });
     //tween.delay(random(500,1000));
     tween.start();
   };
 
   this.popOutTransition = undefined;
+  var _popOutTween = undefined;
+  var _requestResetAt = undefined;
   this.popOut = function() {
     var p = new Promise(function(resolve,reject) {
       if ( _isOut ) {
@@ -385,32 +451,52 @@ function Box( shapeMgr ) {
       tween.to({_alpha:0}, 2000);
       tween.easing(TWEEN.Easing.Quadratic.InOut);
       tween.onComplete(function() {
+        console.log('box popout completed');
+        _popOutTween = undefined;
         _isOut = true;
+        //_stopAllBoxTweens();
+        _requestResetAt = millis() + random(5000);
         resolve();
       });
+      tween.onStop(function() {
+        _popOutTween = undefined;
+        resolve();
+      });
+      console.log('box popout STARTED');
       tween.start();
+      _popOutTween = tween;
     });
     this.popOutTransition = p;
     return p;
   };
 
   this.changeBoxAttrTransition = undefined;
+  var _changeBoxAttrTween = undefined;
   this.changeBoxAttr = function() {
     var p = new Promise(function(resolve,reject) {
       //_self._scaleTransform = {x:1,y:1};
       //var tween = new TWEEN.Tween( _self._scaleTransform );
       //tween.to({x:.5,y:.5}, 2000);
       var tween = new TWEEN.Tween( _attr );
-      if ( _attr._scale <= 2 ) {
-        tween.to({_scale:_attr._scale*2}, 10000);
-      } else {
-        tween.to({_scale:_attr._scale/2}, 10000);
-      }
+      var startScale = _attr._scale;
+      var endScale = _pickScaleTweenTo();
+      tween.to({_scale:endScale}, 10000);
+      // if ( _attr._scale <= 2 ) {
+      //   tween.to({_scale:_attr._scale*2}, 10000);
+      // } else {
+      //   tween.to({_scale:_attr._scale/2}, 10000);
+      // }
       tween.easing(TWEEN.Easing.Quadratic.InOut);
       tween.onComplete(function() {
+        _changeBoxAttrTween = undefined;
+        resolve();
+      });
+      tween.onStop(function() {
+        _changeBoxAttrTween = undefined;
         resolve();
       });
       tween.start();
+      _changeBoxAttrTween = tween;
     });
     this.changeBoxAttrTransition = p;
     return p;
@@ -443,6 +529,14 @@ function Box( shapeMgr ) {
       return;
     }
     _attr._scale = _scaleArr[floor(random(_scaleArr.length))];
+  };
+  var _pickScaleTweenTo = function() {
+    var currentScale = _attr._scale;
+    var newScale = undefined;
+    while ( newScale === undefined || newScale === currentScale ) {
+      newScale = _scaleArr[floor(random(_scaleArr.length))]
+    }
+    return newScale;
   };
 
   var _pickAspectRatio = function( attr ) {
@@ -525,6 +619,7 @@ function Box( shapeMgr ) {
     }
   };
 
+  var _posOffsetTween = undefined;
   var _pickNewPositionOffset = function() {
     var tween = new TWEEN.Tween(_posOffset);
     // var tweenDurationMin = _attr._scale * 1000;
@@ -537,10 +632,17 @@ function Box( shapeMgr ) {
     }
     tween.easing(TWEEN.Easing.Back.InOut);
     tween.onComplete( function() {
-      _pickNewPositionOffset();
+      _posOffsetTween = undefined;
+      if ( !_isOut ) {
+        _pickNewPositionOffset();
+      }
+    });
+    tween.onStop( function() {
+      _posOffsetTween = undefined;
     });
     tween.delay(random(1000,5000));
     tween.start();
+    _posOffsetTween = tween;
   };
 
   this.keepMoving = function() {
@@ -549,6 +651,7 @@ function Box( shapeMgr ) {
 
   var _content;
   var _contentMode;
+  var _changeContentTween;
   var _changeContent = function() {
     _content.lineX = undefined;
     _content.lineY = undefined;
@@ -564,12 +667,14 @@ function Box( shapeMgr ) {
       tween.to({lineY: _sizeWithScale.y - _sizeWithScale.y/10}, random(1000,2000));
     }
     tween.onComplete( function() {
-      _changeContent();
+      if ( !_isOut ) {
+        _changeContent();
+      }
     });
     tween.easing(TWEEN.Easing.Sinusoidal.Out);
     tween.delay(random(1000));
     tween.start();
-
+    _changeContentTween = tween;
   };
 
   this.keepChangingContents = function() {
@@ -582,9 +687,45 @@ function Box( shapeMgr ) {
     return false;
   }
 
+  var _stopAllBoxTweens = function() {
+    _stopSlowJitter();
+    if ( _posOffsetTween ) {
+      _posOffsetTween.stop();
+    }
+    if ( _changeBoxAttrTween ) {
+      _changeBoxAttrTween.stop();
+    }
+    if ( _changeContentTween ) {
+      _changeContentTween.stop();
+    }
+  };
+
+  this.reintroduceBox = function() {
+    this.reset();
+    _attr._alpha = 0;
+    var tween = new TWEEN.Tween(_attr);
+    tween.to({_alpha:_color.rgba[3]},2000);
+    tween.easing(TWEEN.Easing.Quadratic.InOut);
+    tween.start();
+  };
+
   this.reset = function( attr ) {
+    // make sure there are no active tweens
+    _stopAllBoxTweens();
+
+    _isOut = false;
+
+    _requestResetAt = undefined;
+    _timeToPopOut = random(1)<0.5 ? millis() + random(2000,20000) : undefined;
+    //_timeToPopOut = random(1)<1 ? millis() + random(2000,2000) : undefined;
+    _timeToChangeBox = random(1)<0.2 ? millis() + random(2000,20000) : undefined;
+
     _type = BoxTypes.NORMAL;
     _pickPosition( attr );
+    _attr._alpha = undefined; // use default color alpha
+    if ( attr && attr._alpha !== undefined ) {
+
+    }
     _pickScale( attr );
     _pickAspectRatio( attr );
     _updateSize();
@@ -593,6 +734,17 @@ function Box( shapeMgr ) {
     _self.setBoxDisplayMode( shapeMgr.getDisplayMode() );
     _pickColor( attr );
     _angle = 0;
+
+    _content = undefined;
+
+    //this.keepChangingContents();
+
+    if ( random(10) < 5 ) {
+      this.keepMoving();
+    } else if ( random(10) < 5 ) {
+      this.keepChangingContents();
+    }
+
   };
   this.reset();
 
@@ -628,7 +780,19 @@ function Box( shapeMgr ) {
 
   this.update = function() {
     if ( _isOut ) {
-      return;
+      var didReintroduceBox = false;
+      if ( millis() > _requestResetAt ) {
+        _requestResetAt = undefined;
+        if ( _boxShapeMgr.reintroduceBoxIsOk() ) {
+          this.reintroduceBox();
+          didReintroduceBox = true;
+        } else {
+          _requestResetAt = millis() + random(5000);
+        }
+      }
+      if ( !didReintroduceBox ) {
+        return;
+      }
     }
     _updatePos();
     _updateRotation();
@@ -648,6 +812,7 @@ function Box( shapeMgr ) {
     if ( _timeToPopOut !== undefined ) {
       if ( millis() > _timeToPopOut ) {
         _timeToPopOut = undefined;
+        console.log('calling popOut');
         this.popOut();
       }
     }
