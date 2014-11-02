@@ -167,7 +167,13 @@ function Box( shapeMgr ) {
   };
 
   var _pickNewPointOffset = function( tween, point ) {
-    tween.to({x: randomGaussian(0,_pointVarianceLimit*2), y: randomGaussian(0,_pointVarianceLimit*2)}, random(500,1000) );
+
+    var varianceLimit = _pointVarianceLimit * 2;
+    var variancePercentOfBoxWidth = varianceLimit / _sizeWithScale.y;
+    if ( variancePercentOfBoxWidth > 0.02 ) {
+      varianceLimit = 0.02 * _sizeWithScale.y;
+    }
+    tween.to({x: randomGaussian(0,varianceLimit), y: randomGaussian(0,varianceLimit)}, random(500,1000) );
     tween.easing(TWEEN.Easing.Quadratic.InOut);
     tween.onComplete( function() {
       _pickNewPointOffset( tween, point );
