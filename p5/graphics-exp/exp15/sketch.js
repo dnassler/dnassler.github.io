@@ -465,6 +465,9 @@ function Path( shapeMgr ) {
   };
 
   this.draw = function() {
+    if ( floor(_attr.alpha) === 0 ) {
+      return;
+    }
     var pathWidth = _attr.pathWidth;
     push();
     translate( _attr.pathOffset.x, 0 );
@@ -486,7 +489,7 @@ function Path( shapeMgr ) {
     if ( _isFullyDrawn && _ballInfo && _ballInfo.ballPointIndex !== undefined ) {
       push();
       noStroke();
-      fill(180,100*_attr.alpha/200);
+      fill(180,floor(100*_attr.alpha/200));
       var ballIndex = floor(_ballInfo.ballPointIndex);
       var ballPoint = _pathPoints[ballIndex];
       if ( !ballPoint ) {
@@ -510,7 +513,7 @@ function Path( shapeMgr ) {
     var angle = 0;
     var angleStep = PI/numPoints;
     
-    fill(255,255*_attr.alpha/200);
+    fill(255,floor(255*_attr.alpha/200));
     beginShape(TRIANGLE_STRIP); 
     for (var i = 0; i <= numPoints; i++) {
       var px = cos(angle) * outsideRadius;
