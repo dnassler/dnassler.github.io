@@ -347,6 +347,8 @@ function Path( shapeMgr ) {
     _shapeMgr.noiseInput -= 0.0;
   };
 
+  var _drawPathDuration;
+  
   this.introducePath = function() {
 
     var p = new Promise(function(resolve,error){
@@ -363,8 +365,9 @@ function Path( shapeMgr ) {
       _attr.pathHead = new p5.Vector(_pathXPoints[0],-_attr.pathWidth);
       _pathPoints.push( _attr.pathHead.get() );
 
+      _drawPathDuration = fadeTime;
       var tween2 = new TWEEN.Tween(_attr.pathHead);
-      tween2.to({x:_pathXPoints.slice(1), y:height+_attr.pathWidth}, fadeTime);
+      tween2.to({x:_pathXPoints.slice(1), y:height+_attr.pathWidth}, _drawPathDuration);
       tween2.interpolation( TWEEN.Interpolation.Bezier );
       //tween2.interpolation( TWEEN.Interpolation.CatmullRom );
       tween2.easing(TWEEN.Easing.Linear.None);
@@ -412,7 +415,7 @@ function Path( shapeMgr ) {
 
     _ballInfo = {ballPointIndex: 0, ballRotation: random(-PI,PI) };
     var tween = new TWEEN.Tween(_ballInfo);
-    tween.to({ballPointIndex:_pathPoints.length, ballRotation:random(-PI,PI)}, random(1000,3000));
+    tween.to({ballPointIndex:_pathPoints.length, ballRotation:random(-PI,PI)}, _drawPathDuration);
     tween.easing(TWEEN.Easing.Linear.None);
     tween.delay(random(500));
     tween.onUpdate( function() {
