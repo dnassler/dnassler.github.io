@@ -25,3 +25,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is a 
   * [Experiment 13b - black and white animated with shadows and blue]({{site.url}}/p5/graphics-exp/exp13b/index.html)
   * [Experiment 14 - jiggling boxes]({{site.url}}/p5/graphics-exp/exp14/index.html)
   * [Experiment 14c - jiggling boxes, multiple predetermined color palettes]({{site.url}}/p5/graphics-exp/exp14c/index.html)
+  * [Experiment 15 - travelling stars and paths]({{site.url}}/p5/graphics-exp/exp15/index.html)
