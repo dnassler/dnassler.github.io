@@ -348,7 +348,7 @@ function Path( shapeMgr ) {
   };
 
   var _drawPathDuration;
-  
+
   this.introducePath = function() {
 
     var p = new Promise(function(resolve,error){
@@ -417,7 +417,7 @@ function Path( shapeMgr ) {
     var tween = new TWEEN.Tween(_ballInfo);
     tween.to({ballPointIndex:_pathPoints.length, ballRotation:random(-PI,PI)}, _drawPathDuration);
     tween.easing(TWEEN.Easing.Linear.None);
-    tween.delay(random(500));
+    tween.delay(random(2000));
     tween.onUpdate( function() {
       if ( !_isFullyDrawn ) {
         window.setTimeout(function(){
