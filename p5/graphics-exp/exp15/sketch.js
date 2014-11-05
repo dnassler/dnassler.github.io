@@ -11,13 +11,28 @@ function setup() {
   _shapeMgr = new ShapeMgr();
   _stars = new Stars();
 
+  _bgObj = {colorVariance: 1};
+
+  var bgToDarkTween = new TWEEN.Tween( _bgObj )
+    .to({colorVariance: 0}, 30000)
+    .easing(TWEEN.Easing.Circular.InOut);
+  var bgToLightTween = new TWEEN.Tween( _bgObj )
+    .to({colorVariance: 1}, 30000)
+    .easing(TWEEN.Easing.Circular.InOut);
+
+  bgToDarkTween.chain( bgToLightTween );
+  bgToLightTween.chain( bgToDarkTween );
+
+  bgToDarkTween.start();
+
 }
 
+var _bgObj;
 
 function draw() {
-  background(0,100,200);
-  //var bgColor = color(0, floor(100*_bgObj.colorVariance), floor(200*_bgObj.colorVariance));
-  //background(bgColor);
+  //background(0,100,200);
+  var bgColor = color(0, floor(100*_bgObj.colorVariance), floor(200*_bgObj.colorVariance));
+  background(bgColor);
 
   TWEEN.update();
 
@@ -246,7 +261,7 @@ function ShapeMgr() {
       _paths.push( p );
     }
 
-    _timeToReset = millis() + random(10000,20000);
+    //_timeToReset = millis() + random(10000,20000);
 
   };
 
