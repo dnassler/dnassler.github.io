@@ -2,6 +2,7 @@
 var _shapeMgr;
 var _stars;
 
+
 function setup() {
   createCanvas(window.innerWidth, window.innerHeight);
 
@@ -12,8 +13,11 @@ function setup() {
 
 }
 
+
 function draw() {
   background(0,100,200);
+  //var bgColor = color(0, floor(100*_bgObj.colorVariance), floor(200*_bgObj.colorVariance));
+  //background(bgColor);
 
   TWEEN.update();
 
@@ -354,7 +358,7 @@ function Path( shapeMgr ) {
     var p = new Promise(function(resolve,error){
 
       var tween = new TWEEN.Tween(_attr);
-      var fadeTime = random(1000,5000);
+      var fadeTime = random(3000,7000);
       tween.to({alpha:_attr.color.rgba[3]}, fadeTime);
       tween.easing(TWEEN.Easing.Quadratic.InOut);
       var d = 0;//random(5000);
@@ -362,12 +366,12 @@ function Path( shapeMgr ) {
       tween.start();
 
       // the following makes the path
-      _attr.pathHead = new p5.Vector(_pathXPoints[0],-_attr.pathWidth);
-      _pathPoints.push( _attr.pathHead.get() );
+      _attr.pathHead = {x:_pathXPoints[0], y:-_attr.pathWidth, ballRotation: random(-PI,PI)};//new p5.Vector(_pathXPoints[0],-_attr.pathWidth);
+      _pathPoints.push( {x: _attr.pathHead.x, y: _attr.pathHead.y} );
 
       _drawPathDuration = fadeTime;
       var tween2 = new TWEEN.Tween(_attr.pathHead);
-      tween2.to({x:_pathXPoints.slice(1), y:height+_attr.pathWidth}, _drawPathDuration);
+      tween2.to({x:_pathXPoints.slice(1), y:height+_attr.pathWidth, ballRotation: random(-PI,PI)}, _drawPathDuration);
       tween2.interpolation( TWEEN.Interpolation.Bezier );
       //tween2.interpolation( TWEEN.Interpolation.CatmullRom );
       tween2.easing(TWEEN.Easing.Linear.None);
@@ -489,26 +493,35 @@ function Path( shapeMgr ) {
     }
     endShape();
     pop();
+
     if ( _isFullyDrawn && _ballInfo && _ballInfo.ballPointIndex !== undefined ) {
-      push();
-      noStroke();
-      fill(180,floor(100*_attr.alpha/200));
       var ballIndex = floor(_ballInfo.ballPointIndex);
       var ballPoint = _pathPoints[ballIndex];
       if ( !ballPoint ) {
         console.log('ballIndex = '+ballIndex);
       } else {
-        ellipse(ballPoint.x, ballPoint.y, pathWidth, pathWidth);
-        translate( ballPoint.x, ballPoint.y );
-        rotate( _ballInfo.ballRotation );
-        drawStarBall();
+        drawStarBall( ballPoint.x, ballPoint.y, pathWidth, _ballInfo.ballRotation );
       }
-      pop();
+    } else if ( !_isFullyDrawn ) {
+      var ballPoint = _attr.pathHead;
+      if ( ballPoint ) {
+        drawStarBall( ballPoint.x, ballPoint.y, pathWidth, ballPoint.ballRotation );
+      }
+
     }
     pop();
   }
 
-  var drawStarBall = function() {
+  var drawStarBall = function( x, y, size, ballRotation ) {
+    push();
+
+    translate( x, y );
+    rotate( ballRotation );
+
+    noStroke();
+    fill(180,floor(100*_attr.alpha/200));
+    ellipse(0, 0, size, size );
+
     var outsideRadius = _attr.pathWidth;
     var insideRadius = _attr.pathWidth/10;
     
@@ -529,7 +542,7 @@ function Path( shapeMgr ) {
       angle += angleStep;
     }
     endShape(CLOSE);
-    
+    pop();
   };
 
 }
