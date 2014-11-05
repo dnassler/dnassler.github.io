@@ -186,6 +186,11 @@ function Box( g ) {
   var halfBoxWidth;
   var halfBoxHeight;
 
+  var minBoxWidth = width/10;
+  var maxBoxWidth = width/2;
+  var minBoxHeight = width/10;
+  var maxBoxHeight = minBoxHeight*4;
+
   this.setBoxSize = function(width,height) {
     boxWidth = width;
     boxHeight = height;
@@ -193,7 +198,8 @@ function Box( g ) {
     halfBoxWidth = boxWidth/2;
     halfBoxHeight = boxHeight/2;
   };
-  this.setBoxSize( random(200,1000), random(200,700) );
+  //this.setBoxSize( random(200,1000), random(200,700) );
+  this.setBoxSize( random(minBoxWidth,maxBoxWidth), random(minBoxHeight,maxBoxHeight) );
 
   var xMin = g.width*0.1,
     xMax = g.width*0.9,
