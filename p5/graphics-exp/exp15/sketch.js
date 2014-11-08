@@ -355,7 +355,6 @@ function Path( shapeMgr ) {
     for ( i=0.0; i<=1; i+=0.1 ) {
       var noiseVal = noise(_shapeMgr.noiseInput);
       _shapeMgr.noiseInput += 0.05;
-      //_pathPoints.push( new p5.Vector( noiseVal*width*1.5, i*height*1.2-height*.1 ) );
       _pathXPoints.push( noiseVal * width * 1.5 );
     }
     // for ( i=0.0; i<=1; i+=0.005 ) {
@@ -513,23 +512,10 @@ function Path( shapeMgr ) {
       vertex( p.x, p.y );
     }
     endShape();
-    // fill(255);
-    // noStroke();
-    // for (var i=0; i<lastIndex; i++) {
-    //   var p = _pathPoints[i];
-    //   ellipse( p.x, p.y, 5, 5 );
-    // }
     pop();
 
-    if ( _isFullyDrawn && _ballInfo ) {
+    if ( _isFullyDrawn && _ballInfo && _ballInfo.x ) {
       drawStarBall( _ballInfo.x, _ballInfo.y, pathWidth, _ballInfo.ballRotation );
-      //var ballIndex = floor(_ballInfo.ballPointIndex);
-      //var ballPoint = _pathPoints[ballIndex];
-      // if ( !ballPoint ) {
-      //   console.log('ballIndex = '+ballIndex);
-      // } else {
-      //   drawStarBall( ballPoint.x, ballPoint.y, pathWidth, _ballInfo.ballRotation );
-      // }
     } else if ( !_isFullyDrawn ) {
       var ballPoint = _attr.pathHead;
       if ( ballPoint ) {
@@ -542,8 +528,6 @@ function Path( shapeMgr ) {
 
   var _starPoints;
   var calcStarPoints = function() {
-    // var outsideRadius = _attr.pathWidth;
-    // var insideRadius = _attr.pathWidth/10;
     if ( !_starPoints ) {
       _starPoints = [];
       var numPoints = 6;
