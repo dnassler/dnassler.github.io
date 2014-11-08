@@ -385,6 +385,8 @@ function Path( shapeMgr ) {
       _pathPoints.push( {x: _attr.pathHead.x, y: _attr.pathHead.y} );
 
       _drawPathDuration = fadeTime;
+      _attr.pathHead.oldX = _attr.pathHead.x;
+      _attr.pathHead.oldY = _attr.pathHead.y;
       var tween2 = new TWEEN.Tween(_attr.pathHead);
       tween2.to({x:_pathXPoints.slice(1), y:height+_attr.pathWidth, ballRotation: random(-PI,PI)}, _drawPathDuration);
       tween2.interpolation( TWEEN.Interpolation.Bezier );
@@ -392,7 +394,10 @@ function Path( shapeMgr ) {
       tween2.easing(TWEEN.Easing.Linear.None);
       tween2.delay(d);
       tween2.onUpdate( function() {
-        _pathPoints.push( new p5.Vector( this.x, this.y ) );
+        var point = new p5.Vector( this.x, this.y );
+        point.oldX = this.x;
+        point.oldY = this.y;
+        _pathPoints.push( point );
       });
       tween2.onComplete(function() {
         _isFullyDrawn = true;
@@ -432,9 +437,10 @@ function Path( shapeMgr ) {
 
   this.dropBall = function() {
 
-    _ballInfo = {ballPointIndex: 0, ballRotation: random(-PI,PI) };
+    _ballInfo = {x:_pathXPoints[0], y:-_attr.pathWidth, ballRotation: random(-PI,PI) };
     var tween = new TWEEN.Tween(_ballInfo);
-    tween.to({ballPointIndex:_pathPoints.length, ballRotation:random(-PI,PI)}, _drawPathDuration);
+    tween.to({x:_pathXPoints.slice(1), y:height+_attr.pathWidth, ballRotation:random(-PI,PI)}, _drawPathDuration);
+    tween.interpolation( TWEEN.Interpolation.Bezier );
     tween.easing(TWEEN.Easing.Linear.None);
     tween.delay(random(2000));
     tween.onUpdate( function() {
@@ -507,16 +513,23 @@ function Path( shapeMgr ) {
       vertex( p.x, p.y );
     }
     endShape();
+    // fill(255);
+    // noStroke();
+    // for (var i=0; i<lastIndex; i++) {
+    //   var p = _pathPoints[i];
+    //   ellipse( p.x, p.y, 5, 5 );
+    // }
     pop();
 
-    if ( _isFullyDrawn && _ballInfo && _ballInfo.ballPointIndex !== undefined ) {
-      var ballIndex = floor(_ballInfo.ballPointIndex);
-      var ballPoint = _pathPoints[ballIndex];
-      if ( !ballPoint ) {
-        console.log('ballIndex = '+ballIndex);
-      } else {
-        drawStarBall( ballPoint.x, ballPoint.y, pathWidth, _ballInfo.ballRotation );
-      }
+    if ( _isFullyDrawn && _ballInfo ) {
+      drawStarBall( _ballInfo.x, _ballInfo.y, pathWidth, _ballInfo.ballRotation );
+      //var ballIndex = floor(_ballInfo.ballPointIndex);
+      //var ballPoint = _pathPoints[ballIndex];
+      // if ( !ballPoint ) {
+      //   console.log('ballIndex = '+ballIndex);
+      // } else {
+      //   drawStarBall( ballPoint.x, ballPoint.y, pathWidth, _ballInfo.ballRotation );
+      // }
     } else if ( !_isFullyDrawn ) {
       var ballPoint = _attr.pathHead;
       if ( ballPoint ) {
@@ -527,9 +540,35 @@ function Path( shapeMgr ) {
     pop();
   }
 
+  var _starPoints;
+  var calcStarPoints = function() {
+    // var outsideRadius = _attr.pathWidth;
+    // var insideRadius = _attr.pathWidth/10;
+    if ( !_starPoints ) {
+      _starPoints = [];
+      var numPoints = 6;
+      var angle = 0;
+      var angleStep = PI/numPoints;
+      for (var i = 0; i <= numPoints; i++) {
+        var px = cos(angle);// * outsideRadius;
+        var py = sin(angle);// * outsideRadius;
+        _starPoints.push( {px:px,py:py} );
+        angle += angleStep;
+        px = cos(angle);// * insideRadius;
+        py = sin(angle);// * insideRadius;
+        _starPoints.push( {px:px,py:py} );
+        angle += angleStep;
+      }
+      _starPoints.push( _starPoints[0] );
+      _starPoints.push( _starPoints[1] );
+    }
+  };
   var drawStarBall = function( x, y, size, ballRotation ) {
     push();
 
+    if ( !_starPoints ) {
+      calcStarPoints();
+    }
     translate( x, y );
     rotate( ballRotation );
 
@@ -537,24 +576,20 @@ function Path( shapeMgr ) {
     fill(180,floor(100*_attr.alpha/200));
     ellipse(0, 0, size, size );
 
-    var outsideRadius = _attr.pathWidth;
-    var insideRadius = _attr.pathWidth/10;
+    var outsideRadius = size;
+    var insideRadius = size/10;
     
-    var numPoints = 6;
-    var angle = 0;
-    var angleStep = PI/numPoints;
+    var numPoints = _starPoints.length;
     
     fill(255,floor(255*_attr.alpha/200));
     beginShape(TRIANGLE_STRIP); 
-    for (var i = 0; i <= numPoints; i++) {
-      var px = cos(angle) * outsideRadius;
-      var py = sin(angle) * outsideRadius;
-      angle += angleStep;
+    for (var i = 0; i < numPoints; i+=2) {
+      var px = _starPoints[i].px * outsideRadius;
+      var py = _starPoints[i].py * outsideRadius;
       vertex(px, py);
-      px = cos(angle) * insideRadius;
-      py = sin(angle) * insideRadius;
+      px = _starPoints[i+1].px * insideRadius;
+      py = _starPoints[i+1].py * insideRadius;
       vertex(px, py); 
-      angle += angleStep;
     }
     endShape(CLOSE);
     pop();
