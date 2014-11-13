@@ -233,10 +233,10 @@ function ShapeMgr() {
 
           console.log('spin all shapes');
           var twirlCompletedPromises = [];
-          var twirlDuration = random(500,1000);
-          var numTwirls = _self.pickNumRandomTwirls(0.5,2);
           _shapesArr.forEach( function(shape) {
             console.log('spin all shapes: call twirl on a shape');
+            var twirlDuration = random(500,1000);
+            var numTwirls = _self.pickNumRandomTwirls(0.5,2);
             var twirlCompletedPromise = shape.twirl(twirlDuration, numTwirls);
             twirlCompletedPromises.push( twirlCompletedPromise );
           });
@@ -278,7 +278,7 @@ function ShapeMgr() {
 
     //_timeToReset = millis() + random(2000,3000);
     _wantsControlAll = false;
-    _timeToDoSomething = millis() + 1000;// + 5000;
+    _timeToDoSomething = millis() + 5000;// + 5000;
     _timeToMoveShapes = millis() + 1000;
 
   };
@@ -296,7 +296,7 @@ function ShapeMgr() {
       _timeToDoSomething = undefined;
       _doSomething().then(function() {
         _resumeAutoShapeBehaviour();
-        _timeToDoSomething = millis() + random(7000,10000);
+        _timeToDoSomething = millis() + random(10000,15000);
       });
     }
 
@@ -466,8 +466,9 @@ function Shape() {
   };
 
   this.moveShapeTo = function( x, moveDuration ) {
-    _path1.moveMiddleTo( x, moveDuration );
-    var promise = _path2.moveMiddleTo( x, moveDuration );
+    var seperationFactor = random(-width/10,width/10);
+    _path1.moveMiddleTo( x - seperationFactor, moveDuration );
+    var promise = _path2.moveMiddleTo( x + seperationFactor, moveDuration );
     return promise;
   }
 
@@ -479,7 +480,7 @@ function Shape() {
   };
 
   this.resetNextRandomTwirl = function() {
-    _timeToTwirl = millis() + random(5000,10000);
+    _timeToTwirl = millis() + random(3000,7000);
   };
   this.restartRegularShapeMovement = function() {
     _self.resetNextRandomTwirl();
@@ -505,7 +506,7 @@ function Shape() {
       if ( !_self.mgrWantsControl() ) {
         // twirl between 0.5 and 4.5 times
         console.log('self triggering twirl shape');
-        _self.twirl(random(1000,2000),floor(random(1,10))/2, true ).then( function(){
+        _self.twirl(random(500,1000),floor(random(1,10))/2, true ).then( function(){
           console.log('twirl completed');
           if ( !_self.mgrWantsControl() ) {
             _self.restartRegularShapeMovement();
