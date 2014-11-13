@@ -29,3 +29,4 @@ The following were made using the [p5.js](http://p5js.org) framework which is a 
   * [Experiment 16 - sort of random]({{site.url}}/p5/graphics-exp/exp16/index.html)
   * [Experiment 16b - randomish pattern of varying-sized blocks/lights]({{site.url}}/p5/graphics-exp/exp16b/index.html)
   * [Experiment 17 - connected paths dancing, twirling, together and apart]({{site.url}}/p5/graphics-exp/exp17/index.html)
+  * [Experiment 17b - variation of movement patterns in exp17]({{site.url}}/p5/graphics-exp/exp17b/index.html)
