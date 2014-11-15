@@ -29,6 +29,6 @@ tagline: Software Developer And Artist
 
 ---
 
-### [My Development Blog - coming soon](http://blog.dereknassler.com)
+### [My Blog](http://dnassler.wordpress.com/)
 
 ---
