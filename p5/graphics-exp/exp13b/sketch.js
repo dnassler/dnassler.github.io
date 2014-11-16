@@ -403,8 +403,9 @@ function Box( g ) {
     // have the largest angle between the lightToBoxCenter vector 
     // and the vector from the light to the box point.
     shadowPointsArr[0] = sorted[0].get();
-
+    var shapePoint0 = sorted[0];
     var point0 = shadowPointsArr[0];
+
     var lightTo0 = p5.Vector.sub(point0,light);
     var magLightTo0 = lightTo0.mag();
 
@@ -428,6 +429,10 @@ function Box( g ) {
     // have the largest angle between the lightTo0 vector and 
     // the vector from the light to the box point.
     shadowPointsArr[1] = sorted[0].get();
+    var shapePoint1 = sorted[0];
+    if ( shapePoint0 === shapePoint1 ) {
+      shadowPointsArr[1] = sorted[1].get();
+    }
 
     var maxShadowLineLength = max(width,height)*10000;
     var lightToShapePoint;
