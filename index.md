@@ -4,6 +4,10 @@ layout: default
 tagline: Software Developer And Artist
 ---
 
+### [My Blog](http://dnassler.wordpress.com/)
+
+---
+
 ### [Some Development Projects]({{ site.url }}/projects.html)
 
 ---
@@ -26,9 +30,5 @@ tagline: Software Developer And Artist
 ---
 
 ### [My Soundcloud](http://soundcloud.com/dnassler)
-
----
-
-### [My Blog](http://dnassler.wordpress.com/)
 
 ---
