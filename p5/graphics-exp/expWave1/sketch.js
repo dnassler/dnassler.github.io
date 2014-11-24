@@ -49,6 +49,10 @@ function setup() {
   }
 }
 
+function windowResized(){
+  resizeCanvas(window.innerWidth, window.innerHeight);
+}
+
 function draw() {
 
   background(0);
