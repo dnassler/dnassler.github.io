@@ -1,9 +1,11 @@
 var particleArr = [];
+var spaceRotationAngle = 0;
 
 function setup() {
   // uncomment this line to make the canvas the full size of the window
   createCanvas(windowWidth, windowHeight);
 
+  initBackgroundStars();
   //initAttractors();
 
   //window.setTimeout( launchParticle, Math.random()*1000*5 );
@@ -15,6 +17,13 @@ function draw() {
   //ellipse(width/2, height/2, 50, 50);
   background(0);
   
+  translate( windowWidth/2, windowHeight/2 );
+  rotate( spaceRotationAngle );
+  spaceRotationAngle += PI/4000.0;
+  translate( -windowWidth/2, -windowHeight/2 );
+
+  drawBackgroundStars();
+
   updateAttractors();
 
   //updateParticles();
@@ -48,6 +57,31 @@ function keyPressed() {
   }
 }
 
+var backgroundStarsArr = [];
+var starFieldWidth;
+function initBackgroundStars() {
+  starFieldWidth = Math.max(windowWidth,windowHeight);
+  var maxNumStars = 50;
+  for ( var i=0; i < maxNumStars; i++ ) {
+    backgroundStarsArr.push( new DistantStar() );
+  }
+}
+function drawBackgroundStars() {
+  backgroundStarsArr.forEach( function(star) {
+    star.draw();
+  });
+}
+
+function DistantStar() {
+  var size = random(1,10);
+  var px = random(starFieldWidth);
+  var py = random(starFieldWidth);
+  this.draw = function() {
+    noStroke();
+    fill(255);
+    ellipse( px, py, size, size );
+  }
+}
 
 var attractorArr = [];
 var mainAttractor = undefined;
@@ -144,6 +178,14 @@ function Attractor() {
     startTime += duration;
   }
 
+  function drawStar() {
+    noFill();
+    stroke(255,param.alpha);
+    strokeWeight(5);
+    line( xy0.x - starSize, xy0.y, xy0.x + starSize, xy0.y );
+    line( xy0.x, xy0.y - starSize, xy0.x, xy0.y + starSize );
+  }
+
   function init() {
 
     _state = AttractorState.PRIMARY;
@@ -164,8 +206,15 @@ function Attractor() {
     //d = windowWidth/floor(random(1,6));
     param.diameter = 0;
     param.alpha = 0;
+    param.startingUp = true;
     //createjs.Tween.get(param).to({diameter:ultimateDiameter, alpha:255},500,createjs.Ease.cubicOut);
-    createjs.Tween.get(param).to({diameter:ultimateDiameter, alpha:255},500,createjs.Ease.cubicOut);
+    var flashStar = createjs.Tween.get(param, {loop:true}).to({alpha:128}).wait(50).to({alpha:0}).wait(50);
+    createjs.Tween.get(param)
+      .wait(500).call(function(){
+        flashStar.pause();
+      })
+      .set({startingUp: false}, param)
+      .to({diameter:ultimateDiameter, alpha:255},500,createjs.Ease.cubicOut);
     createjs.Tween.get(param.velocity).to({x:ultimateVelocity.x, y:ultimateVelocity.y},1000,createjs.Ease.cubicOut);
 
     discArr = [];
@@ -232,41 +281,45 @@ function Attractor() {
 
       xy0.add( param.velocity );
 
+      if ( !param.startingUp ) {
 
-      noStroke();
+        noStroke();
 
-      var d = param.diameter;
+        var d = param.diameter;
 
-      discArr.forEach( function(item) {
-        //item.discColor[3] = param.alpha;
-        fill( item.discColor );
-        ellipse(xy0.x, xy0.y, d*item.discSizeFactor, d*item.discSizeFactor);
-      });
+        discArr.forEach( function(item) {
+          //item.discColor[3] = param.alpha;
+          fill( item.discColor );
+          ellipse(xy0.x, xy0.y, d*item.discSizeFactor, d*item.discSizeFactor);
+        });
 
-      noFill();
-      var strokeWeight0 = 10;
+        noFill();
+        var strokeWeight0 = 10;
 
-      arcDefArr.forEach( function(item) {
+        arcDefArr.forEach( function(item) {
 
-        // adjust arcLengthFactor
-        //item.arcLengthFactor += item.arcLengthFactorDelta;
+          // adjust arcLengthFactor
+          //item.arcLengthFactor += item.arcLengthFactorDelta;
 
-        dFactor = item.dFactor;
-        arcLengthFactor = item.arcLengthFactor;
-        arcSpeedFactor = item.arcSpeedFactor;
-        arcDirection = item.arcDirection;
-        strokeWeightFactor = item.strokeWeightFactor;
+          dFactor = item.dFactor;
+          arcLengthFactor = item.arcLengthFactor;
+          arcSpeedFactor = item.arcSpeedFactor;
+          arcDirection = item.arcDirection;
+          strokeWeightFactor = item.strokeWeightFactor;
 
-        //item.strokeColor[3] = param.alpha;
-        stroke( item.strokeColor );
-        //stroke(200,50,50);
+          //item.strokeColor[3] = param.alpha;
+          stroke( item.strokeColor );
+          //stroke(200,50,50);
 
-        strokeWeight(strokeWeight0*strokeWeightFactor);
+          strokeWeight(strokeWeight0*strokeWeightFactor);
 
-        arc(xy0.x, xy0.y, d * dFactor, d * dFactor, arcLengthFactor * HALF_PI + arcDirection * arcSpeedFactor/dFactor * millis()/1000, arcLengthFactor * PI + arcDirection * arcSpeedFactor / dFactor * millis()/1000);
+          arc(xy0.x, xy0.y, d * dFactor, d * dFactor, arcLengthFactor * HALF_PI + arcDirection * arcSpeedFactor/dFactor * millis()/1000, arcLengthFactor * PI + arcDirection * arcSpeedFactor / dFactor * millis()/1000);
 
-      });
+        });
 
+      }
+
+      drawStar();
 
       if ( _state == AttractorState.PRIMARY && millis() > startTime + primaryLifetime ) {
 
@@ -308,6 +361,8 @@ function Attractor() {
       // fill(255-param.alpha);
       // ellipse( xy0.x, xy0.y, starSize*2, starSize*2 );
 
+      drawStar();
+
       if ( millis() > startTime + primaryLifetime + secondaryLifetime ) {
         _state = AttractorState.EXPIRED;
         stateChangeCB( _state );
@@ -319,12 +374,12 @@ function Attractor() {
 
     }
 
-    noFill();
-    stroke(255,param.alpha);
-    strokeWeight(5);
-    //var starWeight = 10;
-    line( xy0.x - starSize, xy0.y, xy0.x + starSize, xy0.y );
-    line( xy0.x, xy0.y - starSize, xy0.x, xy0.y + starSize );
+    // noFill();
+    // stroke(255,param.alpha);
+    // strokeWeight(5);
+    // //var starWeight = 10;
+    // line( xy0.x - starSize, xy0.y, xy0.x + starSize, xy0.y );
+    // line( xy0.x, xy0.y - starSize, xy0.x, xy0.y + starSize );
 
     pop();
 
