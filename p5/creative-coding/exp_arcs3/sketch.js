@@ -74,8 +74,8 @@ function drawBackgroundStars() {
 
 function DistantStar() {
   var size = random(1,10);
-  var px = random(starFieldWidth);
-  var py = random(starFieldWidth);
+  var px = random(-starFieldWidth/2, starFieldWidth*1.5);
+  var py = random(-starFieldWidth/2, starFieldWidth*1.5);
   this.draw = function() {
     noStroke();
     fill(255);
