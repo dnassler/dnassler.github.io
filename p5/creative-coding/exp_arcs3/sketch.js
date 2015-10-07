@@ -161,6 +161,7 @@ function Attractor() {
 
   //var d; // = windowWidth/4;
   var ultimateDiameter;
+  var durationToUltimateDiameter;
 
   var param = {
     diameter: undefined,
@@ -199,6 +200,15 @@ function Attractor() {
       windowHeight/2+random(-windowHeight/3,windowHeight/3));
     
     ultimateDiameter = windowWidth/floor(random(1,6));
+    durationToUltimateDiameter = 1000;
+    if ( ultimateDiameter >= windowWidth/2 ) {
+      durationToUltimateDiameter *= 4;
+    } else if ( ultimateDiameter >= windowWidth/3 ) {
+      durationToUltimateDiameter *= 3;
+    } else if ( ultimateDiameter >= windowWidth/4 ) {
+      durationToUltimateDiameter *= 2;
+    }
+
     var maxSpeed = 0.5 * windowWidth/ultimateDiameter;
     var ultimateVelocity = new p5.Vector(random(-maxSpeed,maxSpeed), random(-maxSpeed,maxSpeed));
     param.velocity = new p5.Vector(0, 0);
@@ -214,7 +224,7 @@ function Attractor() {
         flashStar.pause();
       })
       .set({startingUp: false}, param)
-      .to({diameter:ultimateDiameter, alpha:255},500,createjs.Ease.cubicOut);
+      .to({diameter:ultimateDiameter, alpha:255}, durationToUltimateDiameter, createjs.Ease.cubicOut);
     createjs.Tween.get(param.velocity).to({x:ultimateVelocity.x, y:ultimateVelocity.y},1000,createjs.Ease.cubicOut);
 
     discArr = [];
