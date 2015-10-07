@@ -40,6 +40,7 @@ function keyPressed() {
   if ( key === ' ' ) {
     if ( !paused ) {
       noLoop();
+      createjs.Ticker.paused = true;
       paused = true;
       pausedAtTime = millis();
     } else {
@@ -49,6 +50,7 @@ function keyPressed() {
       attractorArr.forEach( function(item) {
         item.correctStartTimeByDuration( pausedDuration );
       });
+      createjs.Ticker.paused = false;
       loop();
       paused = false;
     }
