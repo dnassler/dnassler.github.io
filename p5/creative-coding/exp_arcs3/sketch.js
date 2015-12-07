@@ -1,5 +1,8 @@
+
 var particleArr = [];
 var spaceRotationAngle = 0;
+
+var showHelpText = true;
 
 function setup() {
   // uncomment this line to make the canvas the full size of the window
@@ -10,16 +13,29 @@ function setup() {
 
   //window.setTimeout( launchParticle, Math.random()*1000*5 );
   // window.setTimeout( resetArcArr, random()*1000*5 );
+
+  textFont("sans-serif");
+  textSize(30);
+  textAlign(CENTER);
+
+  window.setTimeout(function() { showHelpText = false; }, 5000);
+
 }
 
 function draw() {
   // draw stuff here
   //ellipse(width/2, height/2, 50, 50);
   background(0);
-  
+
+  push();
+
+  // var fr = frameRate();
+  // console.log("frame rate = "+fr);
+
+
   translate( windowWidth/2, windowHeight/2 );
   rotate( spaceRotationAngle );
-  spaceRotationAngle += PI/4000.0;
+  spaceRotationAngle += PI/4000.0 * globalSpeedTweakFactor();
   translate( -windowWidth/2, -windowHeight/2 );
 
   drawBackgroundStars();
@@ -31,6 +47,18 @@ function draw() {
   // if ( keyIsPressed === true ) {
   //   saveCanvas('CirclesColourful','png');
   // }
+
+  pop();
+
+  if ( showHelpText ) {
+    fill(255);
+    text("touch/click and drag to control speed", width/2, height/2);
+  }
+
+  if ( displaySpeedControl ) {
+    drawSpeedControl();
+  }
+
 }
 
 var paused = false;
@@ -100,11 +128,20 @@ function newAttractor() {
 }
 
 var timeToLaunchNewAttractor = 0;
+var maxNumAttractors = 10;
+function numAttractors() {
+  return attractorArr.length;
+}
 
 function updateAttractors() {
 
-  if ( timeToLaunchNewAttractor < millis() ) {
-    timeToLaunchNewAttractor = millis() + random(0,3000);
+  if ( timeToLaunchNewAttractor < millis() && numAttractors() < maxNumAttractors ) {
+    var maxDurationToNextLauchAttractor = 5000;
+    var durationToNextLaunchAttractor = random(0,3000) * globalSpeedDurationTweakFactor();
+    if ( durationToNextLaunchAttractor > maxDurationToNextLauchAttractor ) {
+      durationToNextLaunchAttractor = maxDurationToNextLauchAttractor;
+    }
+    timeToLaunchNewAttractor = millis() + durationToNextLaunchAttractor;
     newAttractor();
   }
 
@@ -150,6 +187,8 @@ function Attractor() {
   this.getState = function() {
     return _state;
   }
+
+  var fadeDisc = false;
 
   var arcDefArr;
   var discArr;
@@ -198,7 +237,7 @@ function Attractor() {
     xy0 = new p5.Vector(
       windowWidth/2+random(-windowWidth/3,windowWidth/3),
       windowHeight/2+random(-windowHeight/3,windowHeight/3));
-    
+
     ultimateDiameter = windowWidth/floor(random(1,6));
     durationToUltimateDiameter = 1000;
     if ( ultimateDiameter >= windowWidth/2 ) {
@@ -209,11 +248,20 @@ function Attractor() {
       durationToUltimateDiameter *= 3;
     } else if ( ultimateDiameter >= windowWidth/5 ) {
       durationToUltimateDiameter *= 2;
-}
+    }
 
     var maxSpeed = 0.5 * windowWidth/ultimateDiameter;
     var ultimateVelocity = new p5.Vector(random(-maxSpeed,maxSpeed), random(-maxSpeed,maxSpeed));
     param.velocity = new p5.Vector(0, 0);
+
+    // modify lifetime/veloctiy attributes and tween speed by the globalSpeed factor (0-1)
+    var tweakDurationFactor = globalSpeedDurationTweakFactor();
+    primaryLifetime *= tweakDurationFactor;
+    secondaryLifetime *= tweakDurationFactor;
+    durationToUltimateDiameter *= tweakDurationFactor;
+
+    ultimateVelocity *= globalSpeedTweakFactor();
+    var durationToUltimateVelocity = durationToUltimateDiameter;
 
     //d = windowWidth/floor(random(1,6));
     param.diameter = 0;
@@ -227,7 +275,7 @@ function Attractor() {
       })
       .set({startingUp: false}, param)
       .to({diameter:ultimateDiameter, alpha:255}, durationToUltimateDiameter, createjs.Ease.cubicOut);
-    createjs.Tween.get(param.velocity).to({x:ultimateVelocity.x, y:ultimateVelocity.y},1000,createjs.Ease.cubicOut);
+    createjs.Tween.get(param.velocity).to({x:ultimateVelocity.x, y:ultimateVelocity.y},durationToUltimateVelocity,createjs.Ease.cubicOut);
 
     discArr = [];
 
@@ -281,7 +329,7 @@ function Attractor() {
   this.update = function( stateChangeCB ) {
 
     push();
-    
+
     if ( ultimateDiameter >= windowWidth/2 ) {
       blendMode( BURN );
     } else {
@@ -300,8 +348,12 @@ function Attractor() {
         var d = param.diameter;
 
         discArr.forEach( function(item) {
-          //item.discColor[3] = param.alpha;
-          fill( item.discColor );
+          // if ( fadeDisc ) {
+          //   console.log('*** param.alpha = '+param.alpha);
+          // }
+          var c = color(item.discColor.rgba);
+          c.rgba[3] = floor(param.alpha);
+          fill( c.rgba );
           ellipse(xy0.x, xy0.y, d*item.discSizeFactor, d*item.discSizeFactor);
         });
 
@@ -343,12 +395,22 @@ function Attractor() {
 
         _state = AttractorState.PRIMARY_ENDING;
 
-        createjs.Tween.get(param).to({diameter:0,alpha:0},500,createjs.Ease.cubicIn).call( function(){
-          param.alpha = 200;
-          createjs.Tween.get(param).to({alpha:0},secondaryLifetime);
-          _state = AttractorState.SECONDARY;
-          stateChangeCB( _state );
-        });
+        if ( ultimateDiameter >= windowWidth/3 ) {
+          fadeDisc = true;
+          createjs.Tween.get(param).to({alpha:0},2000,createjs.Ease.cubicIn).call( function(){
+            param.alpha = 200;
+            createjs.Tween.get(param).to({alpha:0},secondaryLifetime);
+            _state = AttractorState.SECONDARY;
+            stateChangeCB( _state );
+          });
+        } else {
+          createjs.Tween.get(param).to({diameter:0,alpha:0},500,createjs.Ease.cubicIn).call( function(){
+            param.alpha = 200;
+            createjs.Tween.get(param).to({alpha:0},secondaryLifetime);
+            _state = AttractorState.SECONDARY;
+            stateChangeCB( _state );
+          });
+        }
 
       }
 
@@ -368,7 +430,7 @@ function Attractor() {
       // ellipse( xy0.x + starSize, xy0.y, starWeight, starWeight );
       // ellipse( xy0.x, xy0.y - starSize, starWeight, starWeight );
       // ellipse( xy0.x, xy0.y + starSize, starWeight, starWeight );
-      
+
       // noStroke();
       // fill(255-param.alpha);
       // ellipse( xy0.x, xy0.y, starSize*2, starSize*2 );
@@ -396,7 +458,7 @@ function Attractor() {
     pop();
 
 
-    
+
   };
 
 }
@@ -427,7 +489,7 @@ var Particle = function() {
   var velMin = 10;
   var velFactor = random(1,20);
   var G = random(100000,1000000);
-  
+
   var init = function() {
     posXY = new p5.Vector();
     velXY = new p5.Vector();
@@ -473,7 +535,7 @@ var Particle = function() {
   init();
 
   this.particleIsOffScreen = function() {
-    if ( posXY.x > windowWidth 
+    if ( posXY.x > windowWidth
       || posXY.x < 0
       || posXY.y > windowHeight
       || posXY.y < 0 ) {
@@ -549,7 +611,7 @@ var Particle = function() {
     // ellipse(posXY.x,posXY.y, particleSize, particleSize);
     pop();
   };
-  
+
 };
 
 function launchParticle() {
@@ -578,4 +640,65 @@ function updateParticles() {
 
 }
 
+//---
+//---
 
+
+var pointerStartedX;
+var globalSpeed = 0.25/2.0;
+var globalSpeed0;
+var displaySpeedControl = false;
+
+var globalSpeedDurationTweakFactor = function () {
+  var g = globalSpeed < 0.001 ? 0.001 : globalSpeed;
+  return 1/(g/0.25);
+}
+var globalSpeedTweakFactor = function() {
+  return globalSpeed / 0.25;
+}
+var touchStarted = function() {
+  pointerStarted( touchX );
+};
+var mousePressed = function() {
+  pointerStarted( mouseX );
+}
+var pointerStarted = function(px) {
+  displaySpeedControl = true;
+  pointerStartedX = px;
+  //console.log("pointerStartedX="+pointerStartedX);
+  globalSpeed0 = globalSpeed;
+};
+var pointerMoved = function(px) {
+  //console.log("px="+px);
+  if ( !displaySpeedControl ) {
+    return;
+  }
+  globalSpeed = globalSpeed0 + (px - pointerStartedX) / width;
+  if (globalSpeed < 0) {
+    globalSpeed = 0;
+  } else if (globalSpeed > 1) {
+    globalSpeed = 1;
+  }
+  console.log("globalSpeed="+globalSpeed);
+}
+var mouseMoved = function() {
+  pointerMoved(mouseX);
+};
+var touchMoved = function() {
+  pointerMoved(touchX);
+}
+var touchEnded = mouseReleased = function() {
+  displaySpeedControl = false;
+};
+var drawSpeedControl = function() {
+  showHelpText = false;
+  var left = width/10;
+  var right = width - width/10;
+  var controlWidth = width - width/10*2;
+  var controlStepWidth = controlWidth/100;
+  fill(0,255,0);
+  noStroke();
+  for (var i = 0; i < floor(100*globalSpeed); i++) {
+    rect(left+i*controlStepWidth,height/2,controlStepWidth*0.5,100);
+  }
+};
