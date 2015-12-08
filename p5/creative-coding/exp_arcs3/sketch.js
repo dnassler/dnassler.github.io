@@ -211,6 +211,7 @@ function Attractor() {
   var startTime;
   var primaryLifetime;
   var secondaryLifetime;
+  var fadeDiscDuration;
 
   var starSize = random(5,20);
 
@@ -233,6 +234,7 @@ function Attractor() {
     startTime = millis();
     primaryLifetime = random(3000,10000);
     secondaryLifetime = 10000;//random(5000,10000);
+    fadeDiscDuration = random(2000,secondaryLifetime);
 
     xy0 = new p5.Vector(
       windowWidth/2+random(-windowWidth/3,windowWidth/3),
@@ -259,6 +261,7 @@ function Attractor() {
     primaryLifetime *= tweakDurationFactor;
     secondaryLifetime *= tweakDurationFactor;
     durationToUltimateDiameter *= tweakDurationFactor;
+    fadeDiscDuration *= tweakDurationFactor;
 
     ultimateVelocity *= globalSpeedTweakFactor();
     var durationToUltimateVelocity = durationToUltimateDiameter;
@@ -397,7 +400,7 @@ function Attractor() {
 
         if ( ultimateDiameter >= windowWidth/3 ) {
           fadeDisc = true;
-          createjs.Tween.get(param).to({alpha:0},2000,createjs.Ease.cubicIn).call( function(){
+          createjs.Tween.get(param).to({alpha:0},fadeDiscDuration,createjs.Ease.cubicIn).call( function(){
             param.alpha = 200;
             createjs.Tween.get(param).to({alpha:0},secondaryLifetime);
             _state = AttractorState.SECONDARY;
