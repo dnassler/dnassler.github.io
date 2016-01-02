@@ -1,6 +1,7 @@
 var cm;
 var pm;
 var tm;
+var wm;
 var cam;
 
 
@@ -233,6 +234,153 @@ var Thing = function() {
 
 };
 
+var Ripple = function( g, r, rInc, repeat, rx, ry, rippleWeight ) {
+
+  var _r = r;
+  var _rInc = rInc;
+  var _repeat = repeat;
+  this.kill = false;
+
+  var _g = g; // graphics
+  var _gWidth = _g.width;
+  var _gHeight = _g.height;
+  var _maxR = _g.width * 1.5;
+  var _rx = rx === undefined ? _gWidth/2.0 : rx;
+  var _ry = ry === undefined ? _gHeight/2.0 : ry;
+  var _rippleWeight = rippleWeight === undefined ? 5 : rippleWeight;
+
+  this.update = function() {
+    _r += _rInc;
+    if ( _r >= _maxR ) {
+      if ( _repeat ) {
+        _r = 0;
+      } else {
+        this.kill = true;
+      }
+    }
+  };
+  this.drawToGraphics = function() {
+    if ( _r > 0 ) {
+      _g.push();
+
+      _g.stroke(0,0,255);
+      _g.noFill();
+      _g.translate(_rx, _ry);
+      _g.strokeWeight(_rippleWeight);
+      _g.ellipse(0,0,_r,_r);
+
+      _g.pop();
+    }
+  };
+};
+
+var WallType = {
+  RIPPLES: 'ripples'
+};
+
+var Wall = function(sideInfo, type, rippleSpeed) {
+
+  var _self = this;
+  var _wallThingArr = [];
+
+  var _sideInfo = sideInfo;
+  var _wallType = !type ? WallType.RIPPLES : type;
+  var _rippleSpeed = !rippleSpeed ? 0.25 : rippleSpeed;
+
+  var _textureGraphics;
+  var _textureImage;
+
+  var _gWidth = 100;
+  var _gHeight = 100;
+  var _wallWidth = 500;
+  var _wallHeight = 500;
+
+  var _timeNextRandomRipple = millis() + random(5000);
+
+  var _init = function(){
+    _textureGraphics = createGraphics( _gWidth, _gHeight );
+    _textureImage = createImage( _gWidth, _gHeight );
+    if ( _wallType === 'ripples' ) {
+      _wallThingArr.push(new Ripple(_textureGraphics, 0, rippleSpeed, true));
+      _wallThingArr.push(new Ripple(_textureGraphics, -_gWidth/1.5, rippleSpeed, true));
+    }
+  };
+  _init();
+
+  this.update = function() {
+    if ( millis() > _timeNextRandomRipple ) {
+      _timeNextRandomRipple = millis() + random(5000);
+      _wallThingArr.push(new Ripple(_textureGraphics, 0, rippleSpeed*2, false, random(_gWidth), random(_gHeight), 1));
+    }
+    _textureGraphics.push();
+
+    _textureGraphics.background(0);
+
+    var killArr = [];
+    _wallThingArr.forEach(function(element){
+      element.update();
+      if ( element.kill ) {
+        killArr.push( element );
+        return;
+      }
+      element.drawToGraphics();
+    });
+    if ( killArr.length > 0 ) {
+      killArr.forEach(function(element){
+        _wallThingArr.splice(_wallThingArr.indexOf(element),1);
+      });
+    }
+
+    _textureImage.copy(_textureGraphics._renderer,0,0,_gWidth,_gHeight,0,0,_gWidth,_gHeight);
+
+    _textureGraphics.pop();
+  };
+
+  this.draw = function() {
+
+    push();
+
+    pm.translateToThingBoundaryWall( _sideInfo.z, _sideInfo.x );
+
+    var maxOffset = 10;
+    var h = 30 * (6 + maxOffset/2.0);
+    translate( 0, -h*2, 0 );
+
+    basicMaterial(255);
+    texture(_textureImage);
+    plane(_wallWidth,_wallHeight);
+
+    pop();
+
+  };
+
+};
+
+var WallMgr = function() {
+
+  var _self = this;
+  var _wallArr = [];
+
+  var _init = function(){
+    _wallArr.push(new Wall({z:1,x:0}, WallType.RIPPLES, 0.25));
+    _wallArr.push(new Wall({z:-1,x:0}, WallType.RIPPLES, 0.25));
+  };
+  _init();
+
+  this.update = function() {
+    _wallArr.forEach(function(element){
+      element.update();
+    });
+  };
+
+  this.draw = function() {
+    _wallArr.forEach(function(element){
+      element.draw();
+    });
+  };
+
+};
+
 var ThingMgr = function() {
 
   var _self = this;
@@ -247,56 +395,56 @@ var ThingMgr = function() {
   var _resetShowLightsAt;
   var _resetWaveFreqAt;
   var _waveIndex;
-  var _waveIndexInc = 1;
+  var _waveIndexInc = 0.2;
 
-  var _pgWidth = 100;
-  var _pg;
-  var _pgImg;
-  var _circleRadius;
-  var _circleRadius2;
-  var _circleRadiusInc;
-
-  this.getPGImg = function(){
-    return _pgImg;
-  };
-
-  var _updateThingImage = function() {
-    var pgw = _pgWidth;
-
-    _pg.background(0);
-    _pg.stroke(0,0,255);
-    _pg.noFill();
-    _pg.push();
-    _pg.translate(pgw/2,pgw/2);
-    _pg.strokeWeight(10);
-
-    _pg.strokeWeight(5);
-
-    if ( _circleRadius > 0 ) {
-      _pg.ellipse( 0, 0, _circleRadius, _circleRadius );
-    }
-
-    if ( _circleRadius2 > 0 ) {
-      _pg.ellipse( 0, 0, _circleRadius2, _circleRadius2 );
-    }
-
-    //_pg.ellipse( 0, 0, _circleRadius/4.0, _circleRadius/4.0 );
-
-    _pg.pop();
-
-    _pgImg.copy(_pg._renderer,0,0,_pg.width,_pg.height,0,0,_pg.width,_pg.height);
-
-    _circleRadius += _circleRadiusInc;
-    if ( _circleRadius >= pgw * 1.5 ) {
-      _circleRadius = 0;
-    }
-
-    _circleRadius2 += _circleRadiusInc;
-    if ( _circleRadius2 >= pgw * 1.5 ) {
-      _circleRadius2 = 0;
-    }
-
-  };
+  // var _pgWidth = 100;
+  // var _pg;
+  // var _pgImg;
+  // var _circleRadius;
+  // var _circleRadius2;
+  // var _circleRadiusInc;
+  //
+  // this.getPGImg = function(){
+  //   return _pgImg;
+  // };
+  //
+  // var _updateThingImage = function() {
+  //   var pgw = _pgWidth;
+  //
+  //   _pg.background(0);
+  //   _pg.stroke(0,0,255);
+  //   _pg.noFill();
+  //   _pg.push();
+  //   _pg.translate(pgw/2,pgw/2);
+  //   _pg.strokeWeight(10);
+  //
+  //   _pg.strokeWeight(5);
+  //
+  //   if ( _circleRadius > 0 ) {
+  //     _pg.ellipse( 0, 0, _circleRadius, _circleRadius );
+  //   }
+  //
+  //   if ( _circleRadius2 > 0 ) {
+  //     _pg.ellipse( 0, 0, _circleRadius2, _circleRadius2 );
+  //   }
+  //
+  //   //_pg.ellipse( 0, 0, _circleRadius/4.0, _circleRadius/4.0 );
+  //
+  //   _pg.pop();
+  //
+  //   _pgImg.copy(_pg._renderer,0,0,_pg.width,_pg.height,0,0,_pg.width,_pg.height);
+  //
+  //   _circleRadius += _circleRadiusInc;
+  //   if ( _circleRadius >= pgw * 1.5 ) {
+  //     _circleRadius = 0;
+  //   }
+  //
+  //   _circleRadius2 += _circleRadiusInc;
+  //   if ( _circleRadius2 >= pgw * 1.5 ) {
+  //     _circleRadius2 = 0;
+  //   }
+  //
+  // };
 
   var _init = function() {
     _thingArr = [];
@@ -312,15 +460,13 @@ var ThingMgr = function() {
     //   resolve();
     // });
 
-    _pg = createGraphics(_pgWidth, _pgWidth);
-    _pgImg = createImage(_pg.width,_pg.height);
-    _circleRadius = 0;
-    _circleRadius2 = -_pg.width/1.5;
-    _circleRadiusInc = 0.25;
-    //////_pgImg.set(0,0,_pg);
-    //_pgImg.copy(_pg._renderer,0,0,_pg.width,_pg.height,0,0,_pg.width,_pg.height);
+    // _pg = createGraphics(_pgWidth, _pgWidth);
+    // _pgImg = createImage(_pg.width,_pg.height);
+    // _circleRadius = 0;
+    // _circleRadius2 = -_pg.width/1.5;
+    // _circleRadiusInc = 0.25;
 
-    _updateThingImage();
+    // _updateThingImage();
 
   };
   _init();
@@ -361,37 +507,37 @@ var ThingMgr = function() {
     _thingArr.push( new Thing() );
   };
 
-  var _wallLocationZ = 1;
-  var _wallLocationX = 0;
-
-  var _drawWall = function(wlz, wlx) {
-
-    if ( !wlz && !wlx ) {
-      wlz = _wallLocationZ;
-      wlx = _wallLocationX;
-    }
-    if ( !wlx && !wlz ) {
-      return;
-    }
-
-    push();
-
-    pm.translateToThingBoundaryWall( wlz, wlx );
-
-    var maxOffset = 10;
-    var h = 30 * (6 + maxOffset/2.0);
-    translate( 0, -h*2, 0 );
-
-    basicMaterial(255);
-    texture(tm.getPGImg());
-    plane(500,500);
-
-    pop();
-
-  };
+  // var _wallLocationZ = 1;
+  // var _wallLocationX = 0;
+  //
+  // var _drawWall = function(wlz, wlx) {
+  //
+  //   if ( !wlz && !wlx ) {
+  //     wlz = _wallLocationZ;
+  //     wlx = _wallLocationX;
+  //   }
+  //   if ( !wlx && !wlz ) {
+  //     return;
+  //   }
+  //
+  //   push();
+  //
+  //   pm.translateToThingBoundaryWall( wlz, wlx );
+  //
+  //   var maxOffset = 10;
+  //   var h = 30 * (6 + maxOffset/2.0);
+  //   translate( 0, -h*2, 0 );
+  //
+  //   basicMaterial(255);
+  //   texture(tm.getPGImg());
+  //   plane(500,500);
+  //
+  //   pop();
+  //
+  // };
 
   this.update = function() {
-    _updateThingImage();
+    // _updateThingImage();
 
     if ( _resetShowLightsAt < millis() ) {
       _resetShowLights();
@@ -409,6 +555,7 @@ var ThingMgr = function() {
     });
 
     _waveIndex += _waveIndexInc;
+
   };
 
   this.draw = function() {
@@ -420,8 +567,8 @@ var ThingMgr = function() {
       thing.draw(_attr.alpha);
     });
 
-    _drawWall(1,0);
-    _drawWall(-1,0);
+    // _drawWall(1,0);
+    // _drawWall(-1,0);
 
   };
 
@@ -537,6 +684,7 @@ function setup() {
   cm = new ColorMgr();
   pm = new PositionMgr();
   tm = new ThingMgr();
+  wm = new WallMgr();
 
   var i;
   for ( i=0; i<20; i++ ) {
@@ -550,13 +698,20 @@ function setup() {
 }
 
 function draw() {
-
-  tm.update();
-  cam.update();
-
   background(0);
 
-  orbitControl();
+  tm.update();
+  wm.update();
+
+  if ( displaySpeedControl ) {
+    drawSpeedControl();
+  }
+
+  cam.update();
+
+
+
+  //orbitControl();
 
   //ortho(-width, width, height, -height/2, 0.1, 100);
   push();
@@ -581,6 +736,7 @@ function draw() {
   // rotateY(-PI/3);
 
   tm.draw();
+  wm.draw();
 
   // translate(100,100,-100);
   // rotate(PI/4, [1,1,0]);
@@ -612,3 +768,75 @@ function keyTyped() {
   }
   return false; // prevent any default behavior
 }
+
+//---
+//---
+
+
+var pointerStartedX;
+var globalSpeed = 0.25/2.0;
+var globalSpeed0;
+var displaySpeedControl = false;
+
+var globalSpeedDurationTweakFactor = function () {
+  var g = globalSpeed < 0.001 ? 0.001 : globalSpeed;
+  return 1/(g/0.25);
+}
+var globalSpeedTweakFactor = function() {
+  return globalSpeed / 0.25;
+}
+var touchStarted = function() {
+  pointerStarted( touchX );
+};
+var mousePressed = function() {
+  pointerStarted( mouseX );
+}
+var pointerStarted = function(px) {
+  displaySpeedControl = true;
+  pointerStartedX = px;
+  //console.log("pointerStartedX="+pointerStartedX);
+  globalSpeed0 = globalSpeed;
+};
+var pointerMoved = function(px) {
+  //console.log("px="+px);
+  if ( !displaySpeedControl ) {
+    return;
+  }
+  globalSpeed = globalSpeed0 + (px - pointerStartedX) / width;
+  if (globalSpeed < 0) {
+    globalSpeed = 0;
+  } else if (globalSpeed > 1) {
+    globalSpeed = 1;
+  }
+  console.log("globalSpeed="+globalSpeed);
+  tm.setWaveIndexInc( globalSpeed*2 );
+}
+var mouseMoved = function() {
+  pointerMoved(mouseX);
+};
+var touchMoved = function() {
+  pointerMoved(touchX);
+}
+var touchEnded = mouseReleased = function() {
+  displaySpeedControl = false;
+};
+var drawSpeedControl = function() {
+  push();
+  showHelpText = false;
+  var left = width/10;
+  var right = width - width/10;
+  var controlWidth = width - width/10*2;
+  var controlStepWidth = controlWidth/100;
+  fill(0,255,0);
+  noStroke();
+  //translate(-width/2.0,0,0);
+  translate(left - width/2.0,0,0);
+
+  for (var i = 0; i < floor(100*globalSpeed); i++) {
+    //rect(left+i*controlStepWidth,height/2,controlStepWidth*0.5,100);
+    translate(controlStepWidth,0,0);
+    basicMaterial(0,255,0);
+    plane(controlStepWidth/5,100);
+  }
+  pop();
+};
