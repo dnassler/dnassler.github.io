@@ -47,10 +47,10 @@ var PositionMgr = function() {
   this.translateToThingBoundaryWall = function( zLocationType, xLocationType ) {
     // zLocationType: -1 = far side,  1 = near side, 0/undefined = neither
     // xLocationType: -1 = left side, 1 = right side, 0/undefined = neither
-    var leftWallCenter = {col: -1, row: maxRows/2.0};
-    var rightWallCenter = {col: maxCols+1, row: maxRows/2.0};
-    var farWallCenter = {col: maxCols/2.0, row: -1};
-    var nearWallCenter = {col: maxCols/2.0, row: maxRows+1};
+    var leftWallCenter = {col: -3, row: maxRows/2.0};
+    var rightWallCenter = {col: maxCols+2, row: maxRows/2.0};
+    var farWallCenter = {col: maxCols/2.0, row: -3};
+    var nearWallCenter = {col: maxCols/2.0, row: maxRows+2};
 
     var wallLocation;
     if ( zLocationType === -1 ) {
@@ -363,7 +363,10 @@ var WallMgr = function() {
 
   var _init = function(){
     _wallArr.push(new Wall({z:1,x:0}, WallType.RIPPLES, 0.25));
-    _wallArr.push(new Wall({z:-1,x:0}, WallType.RIPPLES, 0.25));
+    _wallArr.push(new Wall({z:-1,x:0}, WallType.RIPPLES, 0.23));
+    _wallArr.push(new Wall({z:0,x:1}, WallType.RIPPLES, 0.19));
+    _wallArr.push(new Wall({z:0,x:-1}, WallType.RIPPLES, 0.19));
+
   };
   _init();
 
