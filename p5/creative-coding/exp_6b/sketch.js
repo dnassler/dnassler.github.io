@@ -234,7 +234,7 @@ var Thing = function() {
 
 };
 
-var Ripple = function( g, r, rInc, repeat, rx, ry, rippleWeight ) {
+var Ripple = function( g, r, rMax, rInc, repeat, rx, ry, delay, rippleWeight, rippleColor, fadeOut ) {
 
   var _r = r;
   var _rInc = rInc;
@@ -244,13 +244,26 @@ var Ripple = function( g, r, rInc, repeat, rx, ry, rippleWeight ) {
   var _g = g; // graphics
   var _gWidth = _g.width;
   var _gHeight = _g.height;
-  var _maxR = _g.width * 1.5;
+  var _maxR = rMax ? rMax : _g.width * 1.5;
   var _rx = rx === undefined ? _gWidth/2.0 : rx;
   var _ry = ry === undefined ? _gHeight/2.0 : ry;
   var _rippleWeight = rippleWeight === undefined ? 5 : rippleWeight;
+  var _rippleColor = rippleColor === undefined ? color(0,0,255) : rippleColor;
+  var _fadeOut = fadeOut ? fadeOut : false;
+  var _alpha = 1;
+
+  var _started = !delay ? true : false;
+  var _timeToStart = millis() + delay;
 
   this.update = function() {
+    if ( !_started ) {
+      if ( millis() < _timeToStart ) {
+        return;
+      }
+      _started = true;
+    }
     _r += _rInc;
+    _alpha = _r <= _maxR/2 ? 1.0 : (1 - ((_r - _maxR/2)*2)/_maxR);
     if ( _r >= _maxR ) {
       if ( _repeat ) {
         _r = 0;
@@ -260,10 +273,17 @@ var Ripple = function( g, r, rInc, repeat, rx, ry, rippleWeight ) {
     }
   };
   this.drawToGraphics = function() {
+    if ( !_started ) {
+      return;
+    }
     if ( _r > 0 ) {
       _g.push();
 
-      _g.stroke(0,0,255);
+      var rc = _rippleColor;
+      if ( _fadeOut ) {
+        rc = color(red(_rippleColor),green(_rippleColor),blue(_rippleColor),floor(_alpha*255));
+      }
+      _g.stroke(rc);
       _g.noFill();
       _g.translate(_rx, _ry);
       _g.strokeWeight(_rippleWeight);
@@ -271,6 +291,41 @@ var Ripple = function( g, r, rInc, repeat, rx, ry, rippleWeight ) {
 
       _g.pop();
     }
+  };
+};
+
+var Spot = function(g, size, rx, ry, delay, duration) {
+
+  var _self = this;
+  this.kill = false;
+
+  var _g = g;
+  var _rx = rx ? rx : random(_g.width);
+  var _ry = ry ? ry : random(_g.height);
+  var _attr = {size:0, alpha:0};
+  var _maxSize = size;
+
+  createjs.Tween.get(_attr)
+    .wait(delay)
+    .to({size:_maxSize,alpha:1}, duration, createjs.Ease.cubicIn)
+    .to({size:0,alpha:0}, duration, createjs.Ease.cubicOut)
+    .call(function(){
+      _self.kill = true;
+    });
+
+  this.update = function() {
+
+  };
+
+  this.drawToGraphics = function() {
+    //console.log(_attr.size);
+    _g.push();
+    _g.noStroke();
+    _g.fill(255, floor(_attr.alpha * 255));
+    _g.ellipse(_rx,_ry,_attr.size,_attr.size);
+    // _g.fill(255,255);
+    // _g.ellipse(_rx,_ry,10,10);
+    _g.pop();
   };
 };
 
@@ -301,16 +356,27 @@ var Wall = function(sideInfo, type, rippleSpeed) {
     _textureGraphics = createGraphics( _gWidth, _gHeight );
     _textureImage = createImage( _gWidth, _gHeight );
     if ( _wallType === 'ripples' ) {
-      _wallThingArr.push(new Ripple(_textureGraphics, 0, rippleSpeed, true));
-      _wallThingArr.push(new Ripple(_textureGraphics, -_gWidth/1.5, rippleSpeed, true));
+      _wallThingArr.push(new Ripple(_textureGraphics, 0, null, rippleSpeed, true));
+      _wallThingArr.push(new Ripple(_textureGraphics, -_gWidth/1.5, null, rippleSpeed, true));
     }
   };
   _init();
 
+  this.newBeam = function(size, delay, duration) {
+    var rx = random(_gWidth);
+    var ry = random(_gHeight);
+    _wallThingArr.push(new Spot(_textureGraphics, size, rx, ry, delay, duration));
+    _wallThingArr.push(new Ripple(_textureGraphics, 0, _gWidth/2, rippleSpeed*4, false, rx, ry, delay+duration/2, 0.5, color(255), true));
+  };
+
+  var _newRandomRipple = function() {
+    _wallThingArr.push(new Ripple(_textureGraphics, 0, null, rippleSpeed*2, false, random(_gWidth), random(_gHeight), 0, 1));
+  };
+
   this.update = function() {
     if ( millis() > _timeNextRandomRipple ) {
       _timeNextRandomRipple = millis() + random(5000);
-      _wallThingArr.push(new Ripple(_textureGraphics, 0, rippleSpeed*2, false, random(_gWidth), random(_gHeight), 1));
+      _newRandomRipple();
     }
     _textureGraphics.push();
 
@@ -361,16 +427,44 @@ var WallMgr = function() {
   var _self = this;
   var _wallArr = [];
 
+  var _timeNextBeam;
+
   var _init = function(){
     _wallArr.push(new Wall({z:1,x:0}, WallType.RIPPLES, 0.25));
     _wallArr.push(new Wall({z:-1,x:0}, WallType.RIPPLES, 0.23));
     _wallArr.push(new Wall({z:0,x:1}, WallType.RIPPLES, 0.19));
     _wallArr.push(new Wall({z:0,x:-1}, WallType.RIPPLES, 0.19));
-
+    _timeNextBeam = millis() + random(5000);
   };
   _init();
 
+  var _fireInvisibleBeam = function() {
+    var rIndex0 = floor(random(_wallArr.length));
+    var rIndex1;
+    // assuming that there are 4 walls, find another wall.
+    var loopCount = 0;
+    while ( (rIndex1 === undefined) && loopCount < 2 ) {
+      rIndex1 = floor(random(_wallArr.length));
+      if ( rIndex1 != rIndex0 ) break;
+      rIndex1 = undefined;
+      loopCount += 1;
+    }
+    var wall0 = _wallArr[rIndex0];
+    var wall1 = rIndex1 !== undefined ? _wallArr[rIndex1] : undefined;
+    var size = random(2,10);
+    var dur = random(500,1000);
+    var delay = random(1000);
+    wall0.newBeam(size,0,dur);
+    if ( wall1 ) {
+      wall1.newBeam(size,delay,dur);
+    }
+  };
+
   this.update = function() {
+    if ( _timeNextBeam < millis() ) {
+      _timeNextBeam = millis() + random(5000);
+      _fireInvisibleBeam();
+    }
     _wallArr.forEach(function(element){
       element.update();
     });
@@ -842,4 +936,8 @@ var drawSpeedControl = function() {
     plane(controlStepWidth/5,100);
   }
   pop();
+  // translate(0,-200,0);
+  // //textSize(32);
+  // fill(255);
+  // text('word',0,0);
 };
