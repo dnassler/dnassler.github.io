@@ -166,8 +166,18 @@ var Thing = function() {
   this.update = function() {
     _lastOffsetHeight = _offsetHeight;
     var waveIndex = tm.getWaveIndex();
-    //_offsetHeight = 10 * (sin((waveIndex+_pos.row*8+_pos.col*8)*tm.getWaveFreqFactor())+1);
-    _offsetHeight = 10 * ((noise((waveIndex+_pos.row*8+_pos.col*8)*tm.getWaveFreqFactor()))*4-1);
+
+    var tmPattern = tm.getPattern();
+    if ( tmPattern === ThingsPattern.SINE_WAVE ) {
+
+      _offsetHeight = 10 * (1+(sin((waveIndex+_pos.row*8+_pos.col*8)*tm.getWaveFreqFactor())));
+
+    } else if ( tmPattern === ThingsPattern.NOISE_WAVE ) {
+
+      _offsetHeight = 10 * ((noise((waveIndex+_pos.row*8+_pos.col*8)*tm.getWaveFreqFactor()))*4-1);
+
+    }
+
     if ( _lastOffsetHeight === undefined ) {
       _lastOffsetHeight = _offsetHeight;
     }
@@ -212,9 +222,9 @@ var Thing = function() {
     if ( _showBoxes ) {
 
       if ( _lastOffsetHeight < _offsetHeight ) {
-        ambientMaterial(_color);
+        ambientMaterial(c);
       } else {
-        ambientMaterial(160,30,20);
+        ambientMaterial(160*alpha,30*alpha,20*alpha);
         //basicMaterial(160,30,20);
       }
       box( 30 * _size.w, 10, 30 * _size.w );
@@ -236,6 +246,8 @@ var Thing = function() {
 
 var Ripple = function( g, r, rMax, rInc, repeat, rx, ry, delay, rippleWeight, rippleColor, fadeOut ) {
 
+  var _self = this;
+
   var _r = r;
   var _rInc = rInc;
   var _repeat = repeat;
@@ -254,21 +266,56 @@ var Ripple = function( g, r, rMax, rInc, repeat, rx, ry, delay, rippleWeight, ri
 
   var _started = !delay ? true : false;
   var _timeToStart = millis() + delay;
+  var _isStopping = false;
+  var _stoppedResolvePromise;
+  var _timeToKillMe;
+
+  var _stopRipple = function(maxDuration){
+    _isStopping = true;
+    return new Promise(function(resolve,reject){
+      _stoppedResolvePromise = resolve;
+      _timeToKillMe = millis() + (maxDuration === undefined ? 20000 : maxDuration);
+    });
+  };
+  this.stopRipple = _stopRipple;
+
+  var _killMe = function() {
+    // make sure that this function gets called by any code that wants to
+    // kill/stop this ripple otherwise any Promise waiting for stop resolve will
+    // not get called
+    _self.kill = true;
+    if ( _stoppedResolvePromise ) {
+      // the following call resolves the promise created when _stopRipple was called
+      _stoppedResolvePromise();
+    }
+  };
+  this.killMe = _killMe;
 
   this.update = function() {
     if ( !_started ) {
+      if ( _isStopping ) {
+        _killMe();
+        return;
+      }
       if ( millis() < _timeToStart ) {
         return;
       }
       _started = true;
     }
+    if ( _timeToKillMe && millis() > _timeToKillMe ) {
+      _killMe();
+      return;
+    }
+
     _r += _rInc;
+
     _alpha = _r <= _maxR/2 ? 1.0 : (1 - ((_r - _maxR/2)*2)/_maxR);
+
     if ( _r >= _maxR ) {
-      if ( _repeat ) {
+      if ( _repeat && !_isStopping ) {
         _r = 0;
       } else {
-        this.kill = true;
+        _killMe();
       }
     }
   };
@@ -350,33 +397,82 @@ var Wall = function(sideInfo, type, rippleSpeed) {
   var _wallWidth = 500;
   var _wallHeight = 500;
 
-  var _timeNextRandomRipple = millis() + random(5000);
+  var _timeNextRandomRipple;
+  var _isStopped;
+  var _isStopping;
+
+  var _timeForNextUnsheildedBeam;
+
+  this.getIsStopped = function(){
+    return _isStopped;
+  }
+
+  var _startRipples = function() {
+    return Promise.resolve().then(function(){
+      _wallThingArr.push(new Ripple(_textureGraphics, 0, null, rippleSpeed, true));
+      _wallThingArr.push(new Ripple(_textureGraphics, -_gWidth/1.5, null, rippleSpeed, true));
+      _timeNextRandomRipple = millis() + random(5000);
+      _isStopped = false;
+    }).then(function(){
+      return sceneMgr.wait(5000);
+    });
+  };
+  this.startRipples = _startRipples;
 
   var _init = function(){
     _textureGraphics = createGraphics( _gWidth, _gHeight );
     _textureImage = createImage( _gWidth, _gHeight );
-    if ( _wallType === 'ripples' ) {
-      _wallThingArr.push(new Ripple(_textureGraphics, 0, null, rippleSpeed, true));
-      _wallThingArr.push(new Ripple(_textureGraphics, -_gWidth/1.5, null, rippleSpeed, true));
-    }
+    _startRipples();
   };
   _init();
 
-  this.newBeam = function(size, delay, duration) {
+  // var _reinit = function(){
+  //
+  // };
+  // this.reinit = _reinit();
+
+  var _newBeam = function(sizeIn, delayIn, durationIn) {
+    var size = sizeIn !== null && sizeIn !== undefined ? sizeIn : random(2,10);
+    var delay = delayIn !== null && delayIn !== undefined ? delayIn : random(1000);
+    var duration = durationIn !== null && durationIn !== undefined ? durationIn : 500 + ((size-5)/5)*400;
     var rx = random(_gWidth);
     var ry = random(_gHeight);
     _wallThingArr.push(new Spot(_textureGraphics, size, rx, ry, delay, duration));
     _wallThingArr.push(new Ripple(_textureGraphics, 0, _gWidth/2, rippleSpeed*4, false, rx, ry, delay+duration/2, 0.5, color(255), true));
   };
+  this.newBeam = _newBeam;
 
   var _newRandomRipple = function() {
     _wallThingArr.push(new Ripple(_textureGraphics, 0, null, rippleSpeed*2, false, random(_gWidth), random(_gHeight), 0, 1));
   };
 
+  var _stopRipples = function() {
+    //_isStopped = true;
+    _isStopping = true;
+    var pArr = [];
+    _wallThingArr.forEach(function(element){
+      // if the element might not be a Ripple
+      if ( element.stopRipple ) {
+        pArr.push( element.stopRipple() );
+      }
+    });
+    return Promise.all(pArr).then(function(){
+      _isStopping = false;
+      _isStopped = true;
+      _timeForNextUnsheildedBeam = millis();
+    });
+  };
+
+  this.stopRipples = _stopRipples;
+
   this.update = function() {
-    if ( millis() > _timeNextRandomRipple ) {
+    if ( !_isStopped && millis() > _timeNextRandomRipple ) {
       _timeNextRandomRipple = millis() + random(5000);
       _newRandomRipple();
+    }
+    if ( _isStopped && millis() > _timeForNextUnsheildedBeam ) {
+      _timeForNextUnsheildedBeam = millis() + random(100,200);
+      _newBeam();
     }
     _textureGraphics.push();
 
@@ -428,6 +524,7 @@ var WallMgr = function() {
   var _wallArr = [];
 
   var _timeNextBeam;
+  var _timeNextBeamPerWall = [];
 
   var _init = function(){
     _wallArr.push(new Wall({z:1,x:0}, WallType.RIPPLES, 0.25));
@@ -438,8 +535,24 @@ var WallMgr = function() {
   };
   _init();
 
-  var _fireInvisibleBeam = function() {
-    var rIndex0 = floor(random(_wallArr.length));
+  var _stoppedWalls = function(){
+    return _wallArr.filter(function(element){
+      if ( element.getIsStopped() ) {
+        return true;
+      }
+    });
+  };
+  this.stoppedWalls = _stoppedWalls;
+
+  var _fireInvisibleBeam = function(wall0In) {
+    var rIndex0 = -1;// = floor(random(_wallArr.length));
+    if ( wall0In ) {
+      rIndex0 = _wallArr.indexOf(wall0In);
+      if ( rIndex0 === -1 ) {
+        return;
+      }
+    }
+    rIndex0 = rIndex0 == -1 ? floor(random(_wallArr.length)) : rIndex0;
     var rIndex1;
     // assuming that there are 4 walls, find another wall.
     var loopCount = 0;
@@ -451,20 +564,41 @@ var WallMgr = function() {
     }
     var wall0 = _wallArr[rIndex0];
     var wall1 = rIndex1 !== undefined ? _wallArr[rIndex1] : undefined;
-    var size = random(2,10);
-    var dur = random(500,1000);
+    // var size = random(2,10);
+    // var dur = 500 + ((size-5)/5)*400;
     var delay = random(1000);
-    wall0.newBeam(size,0,dur);
+    wall0.newBeam(null,0,null);
     if ( wall1 ) {
-      wall1.newBeam(size,delay,dur);
+      wall1.newBeam(null,delay,null); //TODO: change undefined to null?
     }
   };
+  this.fireInvisibleBeam = _fireInvisibleBeam;
+
+  var _stopRipples = function() {
+    return Promise.all(_wallArr.map(function(wall){
+      return wall.stopRipples();
+    }));
+  };
+  this.stopRipples = _stopRipples;
+
+  var _startRipples = function() {
+    return Promise.all(_wallArr.map(function(wall){
+      return wall.startRipples();
+    }));
+    // return Promise.resolve().then(function(){
+    //   _wallArr.forEach(function(wall){
+    //     return wall.startRipples();
+    //   });
+    // });
+  };
+  this.startRipples = _startRipples;
 
   this.update = function() {
     if ( _timeNextBeam < millis() ) {
       _timeNextBeam = millis() + random(5000);
       _fireInvisibleBeam();
     }
+    // TODO: fire more beams from walls that have been stopped
     _wallArr.forEach(function(element){
       element.update();
     });
@@ -478,10 +612,23 @@ var WallMgr = function() {
 
 };
 
+var ThingsPattern = {
+  SINE_WAVE: 'sine',
+  FAST: 'fast',
+  SLOW: 'slow',
+  FLAT: 'flat',
+  STATIC_SPREAD: 'static_spread',
+  NOISE_WAVE: 'noise_wave'
+};
+
 var ThingMgr = function() {
 
   var _self = this;
+
   var _thingArr;
+
+  var _pattern;
+
   var _attr = {
     waveFreqFactor: 0.05,
     scale: 1,
@@ -493,81 +640,21 @@ var ThingMgr = function() {
   var _resetWaveFreqAt;
   var _waveIndex;
   var _waveIndexInc = 0.2;
-
-  // var _pgWidth = 100;
-  // var _pg;
-  // var _pgImg;
-  // var _circleRadius;
-  // var _circleRadius2;
-  // var _circleRadiusInc;
-  //
-  // this.getPGImg = function(){
-  //   return _pgImg;
-  // };
-  //
-  // var _updateThingImage = function() {
-  //   var pgw = _pgWidth;
-  //
-  //   _pg.background(0);
-  //   _pg.stroke(0,0,255);
-  //   _pg.noFill();
-  //   _pg.push();
-  //   _pg.translate(pgw/2,pgw/2);
-  //   _pg.strokeWeight(10);
-  //
-  //   _pg.strokeWeight(5);
-  //
-  //   if ( _circleRadius > 0 ) {
-  //     _pg.ellipse( 0, 0, _circleRadius, _circleRadius );
-  //   }
-  //
-  //   if ( _circleRadius2 > 0 ) {
-  //     _pg.ellipse( 0, 0, _circleRadius2, _circleRadius2 );
-  //   }
-  //
-  //   //_pg.ellipse( 0, 0, _circleRadius/4.0, _circleRadius/4.0 );
-  //
-  //   _pg.pop();
-  //
-  //   _pgImg.copy(_pg._renderer,0,0,_pg.width,_pg.height,0,0,_pg.width,_pg.height);
-  //
-  //   _circleRadius += _circleRadiusInc;
-  //   if ( _circleRadius >= pgw * 1.5 ) {
-  //     _circleRadius = 0;
-  //   }
-  //
-  //   _circleRadius2 += _circleRadiusInc;
-  //   if ( _circleRadius2 >= pgw * 1.5 ) {
-  //     _circleRadius2 = 0;
-  //   }
-  //
-  // };
+  var _waveIndexIncFactor = 1;
 
   var _init = function() {
     _thingArr = [];
     _resetShowLightsAt = millis() + 1000;//random(1000,5000);
-    var resetThingsDur = random(30000,60000);
-    _resetThingsAt = millis() + resetThingsDur;
-    //_resetWaveFreqAt = millis() + random( 10000, 30000 );
-    _resetWaveFreqAt = millis() + 10000;//random( 10000, 10100 );
+    //var resetThingsDur = random(30000,60000);
+    // _resetThingsAt = millis() + resetThingsDur;
+    // _resetWaveFreqAt = millis() + 10000;
     _attr.scale = 1;
-    _attr.alpha = 0;
+    _attr.alpha = 1;
     _waveIndex = 0;
-    // //createjs.Tween.get(_attr).to({alpha:1}, random(10000,20000), createjs.Ease.cubicInOut).call(function() {
-    //   resolve();
-    // });
+    _waveIndexIncFactor = 1;
 
-    // _pg = createGraphics(_pgWidth, _pgWidth);
-    // _pgImg = createImage(_pg.width,_pg.height);
-    // _circleRadius = 0;
-    // _circleRadius2 = -_pg.width/1.5;
-    // _circleRadiusInc = 0.25;
-
-    // _updateThingImage();
-
+    _setPattern( ThingsPattern.NOISE_WAVE );
   };
-  _init();
-
 
   var _resetShowLights = function() {
     _thingArr.forEach( function(thing) {
@@ -578,7 +665,12 @@ var ThingMgr = function() {
 
   this.getWaveFreqFactor = function() {
     return _attr.waveFreqFactor;
-  }
+  };
+
+  var _setWaveFreqFactor = function( factor ) {
+    _attr.waveFreqFactor = factor;
+  };
+
   var _resetWaveFreq = function() {
     //this.waveFreqFactor = random(0.01, 0.1);
     var newFreq = random(0.001, 0.05);
@@ -604,46 +696,60 @@ var ThingMgr = function() {
     _thingArr.push( new Thing() );
   };
 
-  // var _wallLocationZ = 1;
-  // var _wallLocationX = 0;
-  //
-  // var _drawWall = function(wlz, wlx) {
-  //
-  //   if ( !wlz && !wlx ) {
-  //     wlz = _wallLocationZ;
-  //     wlx = _wallLocationX;
-  //   }
-  //   if ( !wlx && !wlz ) {
-  //     return;
-  //   }
-  //
-  //   push();
-  //
-  //   pm.translateToThingBoundaryWall( wlz, wlx );
-  //
-  //   var maxOffset = 10;
-  //   var h = 30 * (6 + maxOffset/2.0);
-  //   translate( 0, -h*2, 0 );
-  //
-  //   basicMaterial(255);
-  //   texture(tm.getPGImg());
-  //   plane(500,500);
-  //
-  //   pop();
-  //
-  // };
+  var _getPattern = function(){
+    return _pattern;
+  };
+  this.getPattern = _getPattern;
+
+  var _setPattern = function( pattern ){
+    _pattern = pattern;
+  };
+
+  var _changePattern = function(patternType, resetThingsFlag){
+    return _fadeThings(false).then(function(){
+      _waveIndexIncFactor = 1;
+      if ( patternType === ThingsPattern.FLAT ) {
+        _setWaveFreqFactor(0.001);
+      } else if ( patternType === ThingsPattern.NOISE_WAVE ) {
+        _setPattern( ThingsPattern.NOISE_WAVE );
+        _resetWaveFreq();
+      } else if ( patternType === ThingsPattern.STATIC_SPREAD ) {
+        _setPattern( ThingsPattern.NOISE_WAVE );
+        _setWaveFreqFactor(1);
+        _waveIndexIncFactor = 0;
+      } else if ( patternType === ThingsPattern.SINE_WAVE ) {
+        _setPattern( ThingsPattern.SINE_WAVE );
+        _setWaveFreqFactor(0.05);
+        _waveIndexIncFactor = 2;
+      } else if ( patternType === ThingsPattern.FAST ) {
+        _setWaveFreqFactor(0.05);
+        _waveIndexIncFactor = 2;
+      } else if ( patternType === ThingsPattern.SLOW ) {
+        _setWaveFreqFactor(0.01);
+        _waveIndexIncFactor = 1;
+      }
+      if ( resetThingsFlag ) {
+        _resetThings();
+      }
+    }).then(function(){
+      return _fadeThings(true);
+    });
+  };
+  this.changePattern = _changePattern;
+
+  _init();
 
   this.update = function() {
     // _updateThingImage();
 
-    if ( _resetShowLightsAt < millis() ) {
-      _resetShowLights();
-    }
-    if ( !_fadingThings && _resetThingsAt < millis() ) {
-      this.fadeThings().then(function() {
-        _self.resetThings();
-      });
-    }
+    // if ( _resetShowLightsAt < millis() ) {
+    //   _resetShowLights();
+    // }
+    // if ( _resetThingsAt && !_fadingThings && _resetThingsAt < millis() ) {
+    //   this.fadeThings().then(function() {
+    //     _self.resetThings();
+    //   });
+    // }
     // if ( _resetWaveFreqAt < millis() ) {
     //   _resetWaveFreq();
     // }
@@ -651,7 +757,7 @@ var ThingMgr = function() {
       thing.update();
     });
 
-    _waveIndex += _waveIndexInc;
+    _waveIndex += _waveIndexInc * _waveIndexIncFactor;
 
   };
 
@@ -663,25 +769,22 @@ var ThingMgr = function() {
     _thingArr.forEach( function(thing) {
       thing.draw(_attr.alpha);
     });
-
-    // _drawWall(1,0);
-    // _drawWall(-1,0);
-
   };
 
-  this.fadeThings = function(duration) {
+  var _fadeThings = function(isFadeIn, duration) {
     _fadingThings = true;
+    var finalAlpha = isFadeIn ? 1 : 0;
     return new Promise(function(resolve, reject) {
-      createjs.Tween.get(_attr).to({alpha:0}, duration ? duration : random(10000,20000), createjs.Ease.cubicInOut).call(function() {
-        window.setTimeout(function(){
-          _fadingThings = false;
-          resolve();
-        }, random(2000,10000));
+      createjs.Tween.get(_attr).to({alpha:finalAlpha}, duration ? duration : 1000, createjs.Ease.cubicInOut).call(function() {
+        _fadingThings = false;
+        resolve();
       });
     });
   };
 
-  this.resetThings = function() {
+  this.fadeThings = _fadeThings;
+
+  var _resetThings = function() {
     var resetThingsDur = random(30000,60000);
     pm.reset();
     _init();
@@ -693,6 +796,8 @@ var ThingMgr = function() {
     _resetWaveFreq();
     _resetThingsAt = millis() + resetThingsDur;
   };
+
+  this.resetThings = _resetThings;
 
 };
 
@@ -766,6 +871,94 @@ var Camera = function() {
 
 var b0;
 
+var sceneMgr;
+
+var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
+
+  var _cm = colorMgr;
+  var _pm = posMgr;
+  var _tm = thingMgr;
+  var _wm = wallMgr;
+  var _cam = camMgr;
+
+  var _timeToChangeBlocks;
+  var _isChangingBlocks;
+
+  //var _timeForNextUnsheildedBeam = millis() + 1000;
+
+  var _init = function() {
+    _timeToChangeBlocks = millis() + 10000;
+    _isChangingBlocks = false;
+  };
+  _init();
+
+  var _wait = function(duration) {
+    return new Promise(function(resolve,reject){
+      window.setTimeout(function(){
+        resolve();
+      }, duration);
+    });
+  };
+  this.wait = _wait;
+
+  var _startChangeBlocksSequence = function() {
+    //TODO: check if changing already and if so then ignore this request
+    if ( _isChangingBlocks ) {
+      console.log('change in progress, ignore new change request');
+      return;
+    }
+    _isChangingBlocks = true;
+    _tm.changePattern( ThingsPattern.STATIC_SPREAD );
+    console.log('about to stop ripples');
+    return _wm.stopRipples().then(function(){
+      console.log('stopped ripples. waiting...');
+      //_tm.changePattern( ThingsPattern.STATIC_SPREAD );
+      return _wait(random(10000,30000));
+    })
+    .then(function(){
+      _tm.changePattern( ThingsPattern.SINE_WAVE );
+      return _wait(random(10000,30000));
+    })
+    .then(function(){
+      // restart wall activity (i.e. re-initialize walls)
+      console.log('waiting done. restart ripples');
+      //_tm.changePattern( ThingsPattern.FAST );
+      return _wm.startRipples();
+    })
+    .then(function(){
+      _isChangingBlocks = false;
+      _tm.changePattern( ThingsPattern.NOISE_WAVE );
+    })
+    .catch(function(err){
+      console.log('SceneMgr change block sequence error: '+err);
+    });
+  };
+
+  this.update = function() {
+    if ( !_isChangingBlocks && millis() > _timeToChangeBlocks ) {
+      _startChangeBlocksSequence().then(function(){
+        _timeToChangeBlocks = millis() + 30000;
+      });
+    }
+    // if ( _timeForNextUnsheildedBeam && millis() > _timeForNextUnsheildedBeam ) {
+    //   var wallStoppedArr = _wm.stoppedWalls();
+    //   if ( wallStoppedArr.length > 0 ) {
+    //     var rIndex = floor(random(wallStoppedArr.length));
+    //     _wm.fireInvisibleBeam(wallStoppedArr[rIndex]);
+    //     _timeForNextUnsheildedBeam = millis() + random(50,(5-wallStoppedArr.length)*100);
+    //   } else {
+    //     _timeForNextUnsheildedBeam = millis() + 1000;
+    //   }
+    //
+    // }
+  };
+
+  this.draw = function() {
+
+  };
+
+};
+
 function preload() {
   // universe01.jpg
   // load the background image of the universe
@@ -782,13 +975,15 @@ function setup() {
   pm = new PositionMgr();
   tm = new ThingMgr();
   wm = new WallMgr();
+  cam = new Camera();
 
   var i;
   for ( i=0; i<20; i++ ) {
     tm.createNewThing();
   }
 
-  cam = new Camera();
+
+  sceneMgr = new SceneMgr(cm, pm, tm, wm, cam);
 
   //background(b0);
 
@@ -796,6 +991,8 @@ function setup() {
 
 function draw() {
   background(0);
+
+  sceneMgr.update();
 
   tm.update();
   wm.update();
@@ -805,8 +1002,6 @@ function draw() {
   }
 
   cam.update();
-
-
 
   //orbitControl();
 
@@ -834,6 +1029,8 @@ function draw() {
 
   tm.draw();
   wm.draw();
+
+  sceneMgr.draw();
 
   // translate(100,100,-100);
   // rotate(PI/4, [1,1,0]);
