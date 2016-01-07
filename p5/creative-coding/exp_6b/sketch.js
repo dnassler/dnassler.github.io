@@ -140,6 +140,9 @@ var Thing = function() {
   var _spinRateX;
   var _spinRateZ;
 
+  var _thingHit = false;
+  var _tweenAttr = {brightnessOffset:0, angleXOffset:0, angleYOffset:0, angleZOffset:0};
+
   var _randomShowLight = function() {
     _showLight = floor(random(2)) >= 1 ? true : false;
   };
@@ -161,6 +164,23 @@ var Thing = function() {
 
   this.getGridPoint = function() {
     return _pos;
+  };
+
+  this.hitByBeam = function() {
+    // if a "beam" hits this thing then flash it and rock it
+
+    _thingHit = true;
+    createjs.Tween.get(_tweenAttr,{override:true})
+      .to({
+        brightnessOffset:1,
+        angleXOffset:random(-PI/4,PI/4),
+        angleYOffset:random(-PI/4,PI/4),
+        angleZOffset:random(-PI/4,PI/4)},
+        500,createjs.Ease.cubicIn)
+      .to({brightnessOffset:0,angleXOffset:0,angleYOffset:0,angleZOffset:0},500,createjs.Ease.cubicOut)
+      .call(function(){
+        _thingHit = false;
+      });
   };
 
   this.update = function() {
@@ -195,12 +215,29 @@ var Thing = function() {
 
   var _showBoxes = true;
 
-  this.draw = function(alpha) {
+  this.draw = function(attr) {
+    var alpha = attr.alpha;
+    var angleYOffsetExtra = attr.angleYOffset;
     push();
     //translate(i*30*4,j*30*4,0);
     pm.translateToThingPos( _self );
 
-    var c = color(red(_color)*alpha,green(_color)*alpha,blue(_color)*alpha);
+    var c;
+    var redColor;
+    if ( !_thingHit ) {
+      c = color(red(_color)*alpha,green(_color)*alpha,blue(_color)*alpha);
+      redColor = color(160*alpha,30*alpha,20*alpha);
+    } else {
+      var offsetAmt = 255*_tweenAttr.brightnessOffset;
+      c = color(
+        (red(_color)+offsetAmt)*alpha,
+        (green(_color)+offsetAmt)*alpha,
+        (blue(_color)+offsetAmt)*alpha);
+      redColor = color(
+        (160+offsetAmt)*alpha,
+        (30+offsetAmt)*alpha,
+        (20+offsetAmt)*alpha);
+    }
     //ambientMaterial(c);
 
     //ambientMaterial(b0+random(-100,100),random(100,120),random(200,220));
@@ -216,15 +253,23 @@ var Thing = function() {
     // if ( _showLight ) {
     //   basicMaterial(_color);
     // }
-    rotateX(_angleX);
-    rotateZ(_angleZ);
+
+    // rotateX(_angleX);
+    // rotateY(_angleY);
+    // rotateZ(_angleZ);
+
+    // if ( _thingHit ) {
+    rotateX( _tweenAttr.angleXOffset );
+    rotateY( _tweenAttr.angleYOffset + angleYOffsetExtra );
+    rotateZ( _tweenAttr.angleZOffset );
+    // }
 
     if ( _showBoxes ) {
 
       if ( _lastOffsetHeight < _offsetHeight ) {
         ambientMaterial(c);
       } else {
-        ambientMaterial(160*alpha,30*alpha,20*alpha);
+        ambientMaterial(redColor);
         //basicMaterial(160,30,20);
       }
       box( 30 * _size.w, 10, 30 * _size.w );
@@ -439,6 +484,17 @@ var Wall = function(sideInfo, type, rippleSpeed) {
     var ry = random(_gHeight);
     _wallThingArr.push(new Spot(_textureGraphics, size, rx, ry, delay, duration));
     _wallThingArr.push(new Ripple(_textureGraphics, 0, _gWidth/2, rippleSpeed*4, false, rx, ry, delay+duration/2, 0.5, color(255), true));
+
+    //based on a certain probability, pick a random "thing" and make it "flash" bright
+    //as if it was hit by the beam... also maybe rotate it slightly...maybe make the
+    //"thing" forever after have a darker colour as if it was burnt out a little from
+    //the "hit"
+
+    if (random(5) < 2) {
+      var rThing = tm.getRandomThing();
+      rThing.hitByBeam();
+    }
+
   };
   this.newBeam = _newBeam;
 
@@ -632,7 +688,8 @@ var ThingMgr = function() {
   var _attr = {
     waveFreqFactor: 0.05,
     scale: 1,
-    alpha: 1
+    alpha: 1,
+    angleYOffset: 0
   };
   var _resetThingsAt;
   var _fadingThings = false;
@@ -696,6 +753,10 @@ var ThingMgr = function() {
     _thingArr.push( new Thing() );
   };
 
+  this.getRandomThing = function() {
+    return _thingArr[floor(random(_thingArr.length))];
+  };
+
   var _getPattern = function(){
     return _pattern;
   };
@@ -706,7 +767,16 @@ var ThingMgr = function() {
   };
 
   var _changePattern = function(patternType, resetThingsFlag){
-    return _fadeThings(false).then(function(){
+    // var initialAction;
+    // if ( patternType === ThingsPattern.STATIC_SPREAD ) {
+    //   //roate all things before fadeThings
+    //   initialAction = _rotateThings(TWO_PI);
+    // } else {
+    //   initialAction = Promise.resolve();
+    // }
+    return Promise.resolve().then(function(){
+      return Promise.all([_rotateThings(PI), _fadeThings(false,1000)]);
+    }).then(function(){
       _waveIndexIncFactor = 1;
       if ( patternType === ThingsPattern.FLAT ) {
         _setWaveFreqFactor(0.001);
@@ -714,7 +784,7 @@ var ThingMgr = function() {
         _setPattern( ThingsPattern.NOISE_WAVE );
         _resetWaveFreq();
       } else if ( patternType === ThingsPattern.STATIC_SPREAD ) {
-        _setPattern( ThingsPattern.NOISE_WAVE );
+        _setPattern( ThingsPattern.STATIC_SPREAD );
         _setWaveFreqFactor(1);
         _waveIndexIncFactor = 0;
       } else if ( patternType === ThingsPattern.SINE_WAVE ) {
@@ -767,22 +837,33 @@ var ThingMgr = function() {
     translate(0,700,0);
 
     _thingArr.forEach( function(thing) {
-      thing.draw(_attr.alpha);
+      thing.draw(_attr);
     });
   };
 
-  var _fadeThings = function(isFadeIn, duration) {
+  var _fadeThings = function(isFadeIn, delay, duration) {
     _fadingThings = true;
     var finalAlpha = isFadeIn ? 1 : 0;
     return new Promise(function(resolve, reject) {
-      createjs.Tween.get(_attr).to({alpha:finalAlpha}, duration ? duration : 1000, createjs.Ease.cubicInOut).call(function() {
+      createjs.Tween.get(_attr).wait(delay ? delay : 0).to({alpha:finalAlpha}, duration ? duration : 1000, createjs.Ease.cubicInOut).call(function() {
         _fadingThings = false;
         resolve();
       });
     });
   };
-
   this.fadeThings = _fadeThings;
+
+  var _rotateThings = function(angleYOffsetAmount) {
+    return new Promise(function(resolve,reject){
+      createjs.Tween.get(_attr)
+        .to({angleYOffset:angleYOffsetAmount},2000,createjs.Ease.cubicIn)
+        .call(function(){
+          _attr.angleYOffset = 0;
+          resolve();
+        });
+    });
+  };
+  this.rotateThings = _rotateThings;
 
   var _resetThings = function() {
     var resetThingsDur = random(30000,60000);
@@ -908,15 +989,27 @@ var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
       return;
     }
     _isChangingBlocks = true;
-    _tm.changePattern( ThingsPattern.STATIC_SPREAD );
-    console.log('about to stop ripples');
-    return _wm.stopRipples().then(function(){
+    return Promise.resolve()
+    .then(function(){
+      console.log('about to change to STATIC_SPREAD');
+      return _tm.changePattern( ThingsPattern.STATIC_SPREAD );
+    })
+    .then(function(){
+      console.log('about to stop ripples');
+      return _wm.stopRipples();
+    })
+    .then(function(){
       console.log('stopped ripples. waiting...');
       //_tm.changePattern( ThingsPattern.STATIC_SPREAD );
       return _wait(random(10000,30000));
     })
     .then(function(){
-      _tm.changePattern( ThingsPattern.SINE_WAVE );
+      return;// _tm.rotateThings(TWO_PI);
+    })
+    .then(function(){
+      return _tm.changePattern( ThingsPattern.SINE_WAVE );
+    })
+    .then(function(){
       return _wait(random(10000,30000));
     })
     .then(function(){
@@ -926,8 +1019,11 @@ var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
       return _wm.startRipples();
     })
     .then(function(){
+      return _tm.changePattern( ThingsPattern.NOISE_WAVE );
+    })
+    .then(function(){
       _isChangingBlocks = false;
-      _tm.changePattern( ThingsPattern.NOISE_WAVE );
+      return;
     })
     .catch(function(err){
       console.log('SceneMgr change block sequence error: '+err);
@@ -937,7 +1033,7 @@ var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
   this.update = function() {
     if ( !_isChangingBlocks && millis() > _timeToChangeBlocks ) {
       _startChangeBlocksSequence().then(function(){
-        _timeToChangeBlocks = millis() + 30000;
+        _timeToChangeBlocks = millis() + random(30000,60000);
       });
     }
     // if ( _timeForNextUnsheildedBeam && millis() > _timeForNextUnsheildedBeam ) {
