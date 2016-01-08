@@ -44,31 +44,38 @@ var PositionMgr = function() {
     translate(gridPoint.col * 30*4, 0, gridPoint.row * 30 * 4);
   };
 
-  this.translateToThingBoundaryWall = function( zLocationType, xLocationType ) {
+  this.translateToThingBoundaryWall = function( zLocationType, xLocationType, distanceOffset ) {
     // zLocationType: -1 = far side,  1 = near side, 0/undefined = neither
     // xLocationType: -1 = left side, 1 = right side, 0/undefined = neither
-    var leftWallCenter = {col: -3, row: maxRows/2.0};
-    var rightWallCenter = {col: maxCols+2, row: maxRows/2.0};
-    var farWallCenter = {col: maxCols/2.0, row: -3};
-    var nearWallCenter = {col: maxCols/2.0, row: maxRows+2};
+    // distanceOffset:
+    //    +/- number of rows or columns distance from default
+    //    where a positive number means farther away and a
+    //    negative number means closer than the default distance
+    if ( distanceOffset === undefined ) {
+      distanceOffset = 0;
+    }
+    var leftWallCenter = {col: -3 - distanceOffset, row: maxRows/2.0};
+    var rightWallCenter = {col: maxCols+2 + distanceOffset, row: maxRows/2.0};
+    var farWallCenter = {col: maxCols/2.0, row: -3 - distanceOffset};
+    var nearWallCenter = {col: maxCols/2.0, row: maxRows+2 + distanceOffset};
+
+    var yAngle = 0;
 
     var wallLocation;
     if ( zLocationType === -1 ) {
       wallLocation = farWallCenter;
-      translate(wallLocation.col * 30*4, 0, wallLocation.row * 30*4);
     } else if ( zLocationType === 1 ) {
       wallLocation = nearWallCenter;
-      translate(wallLocation.col * 30*4, 0, wallLocation.row * 30*4);
     } else if ( xLocationType === -1 ) {
       wallLocation = leftWallCenter;
-      translate(wallLocation.col * 30*4, 0, wallLocation.row * 30*4);
-      rotateY(-HALF_PI);
+      yAngle = -HALF_PI;
     } else if ( xLocationType === 1 ) {
       wallLocation = rightWallCenter;
-      translate(wallLocation.col * 30*4, 0, wallLocation.row * 30*4);
-      rotateY(HALF_PI);
+      yAngle = HALF_PI;
     }
 
+    translate(wallLocation.col * 30*4, 0, wallLocation.row * 30*4);
+    rotateY(yAngle);
   };
 
   this.reservePos = function( pos, thing ) {
@@ -448,6 +455,8 @@ var Wall = function(sideInfo, type, rippleSpeed) {
 
   var _timeForNextUnsheildedBeam;
 
+  // _isStopped=true means that the wall is not producing Big Blue ripples
+  // and there are many little flashes of light
   this.getIsStopped = function(){
     return _isStopped;
   }
@@ -521,6 +530,19 @@ var Wall = function(sideInfo, type, rippleSpeed) {
 
   this.stopRipples = _stopRipples;
 
+  var _moveWallToNewOffset = function( newDistanceOffset, delay, duration ) {
+    return new Promise(function(resolve,reject){
+      createjs.Tween.get(_sideInfo)
+        .wait(delay)
+        .to({distanceOffset:newDistanceOffset},
+          duration ? duration : 0, createjs.Ease.cubicInOut)
+        .call(function(){
+          resolve();
+        })
+    });
+  };
+  this.moveWallToNewOffset = _moveWallToNewOffset;
+
   this.update = function() {
     if ( !_isStopped && millis() > _timeNextRandomRipple ) {
       _timeNextRandomRipple = millis() + random(5000);
@@ -558,7 +580,7 @@ var Wall = function(sideInfo, type, rippleSpeed) {
 
     push();
 
-    pm.translateToThingBoundaryWall( _sideInfo.z, _sideInfo.x );
+    pm.translateToThingBoundaryWall( _sideInfo.z, _sideInfo.x, _sideInfo.distanceOffset );
 
     var maxOffset = 10;
     var h = 30 * (6 + maxOffset/2.0);
@@ -590,6 +612,10 @@ var WallMgr = function() {
     _timeNextBeam = millis() + random(5000);
   };
   _init();
+
+  this.getWallArr = function() {
+    return _wallArr;
+  };
 
   var _stoppedWalls = function(){
     return _wallArr.filter(function(element){
@@ -966,11 +992,13 @@ var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
 
   var _timeToChangeBlocks;
   var _isChangingBlocks;
+  var _timeToMoveWalls;
 
   //var _timeForNextUnsheildedBeam = millis() + 1000;
 
   var _init = function() {
     _timeToChangeBlocks = millis() + 10000;
+    _timeToMoveWalls = millis() + 10000;
     _isChangingBlocks = false;
   };
   _init();
@@ -1032,11 +1060,28 @@ var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
     });
   };
 
+  var _startMovingWalls = function() {
+    var wallArr = wm.getWallArr();
+    wallArr.forEach( function( wall ){
+      var r = random(3);
+      if ( r < 1 ) {
+        wall.moveWallToNewOffset( random(10), random(2000), random(5000,7000) );
+      } else if ( r < 2 ) {
+        wall.moveWallToNewOffset( 0, random(2000), random(5000,7000) );
+      }
+    });
+  };
+
   this.update = function() {
     if ( !_isChangingBlocks && millis() > _timeToChangeBlocks ) {
       _startChangeBlocksSequence().then(function(){
         _timeToChangeBlocks = millis() + random(30000,60000);
       });
+    }
+
+    if ( millis() > _timeToMoveWalls ) {
+      _timeToMoveWalls = millis() + 10000;//random(10000,30000);
+      _startMovingWalls();
     }
     // if ( _timeForNextUnsheildedBeam && millis() > _timeForNextUnsheildedBeam ) {
     //   var wallStoppedArr = _wm.stoppedWalls();
