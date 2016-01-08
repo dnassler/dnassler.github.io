@@ -775,7 +775,8 @@ var ThingMgr = function() {
     //   initialAction = Promise.resolve();
     // }
     return Promise.resolve().then(function(){
-      return Promise.all([_rotateThings(PI), _fadeThings(false,1000)]);
+      return Promise.all(
+        [_rotateThings(PI,2000,createjs.Ease.cubicIn), _fadeThings(false,1500,500)]);
     }).then(function(){
       _waveIndexIncFactor = 1;
       if ( patternType === ThingsPattern.FLAT ) {
@@ -791,18 +792,12 @@ var ThingMgr = function() {
         _setPattern( ThingsPattern.SINE_WAVE );
         _setWaveFreqFactor(0.05);
         _waveIndexIncFactor = 2;
-      } else if ( patternType === ThingsPattern.FAST ) {
-        _setWaveFreqFactor(0.05);
-        _waveIndexIncFactor = 2;
-      } else if ( patternType === ThingsPattern.SLOW ) {
-        _setWaveFreqFactor(0.01);
-        _waveIndexIncFactor = 1;
       }
       if ( resetThingsFlag ) {
         _resetThings();
       }
     }).then(function(){
-      return _fadeThings(true);
+      return Promise.all( [_fadeThings(true,0,500), _rotateThings(PI,2000,createjs.Ease.cubicOut)] );
     });
   };
   this.changePattern = _changePattern;
@@ -845,18 +840,25 @@ var ThingMgr = function() {
     _fadingThings = true;
     var finalAlpha = isFadeIn ? 1 : 0;
     return new Promise(function(resolve, reject) {
-      createjs.Tween.get(_attr).wait(delay ? delay : 0).to({alpha:finalAlpha}, duration ? duration : 1000, createjs.Ease.cubicInOut).call(function() {
-        _fadingThings = false;
-        resolve();
-      });
+      createjs.Tween.get(_attr)
+        .wait(delay ? delay : 0)
+        .to({alpha:finalAlpha},
+          duration ? duration : 1000,
+          isFadeIn ? createjs.Ease.cubicOut : createjs.Ease.cubicIn)
+        .call(function() {
+          _fadingThings = false;
+          resolve();
+        });
     });
   };
   this.fadeThings = _fadeThings;
 
-  var _rotateThings = function(angleYOffsetAmount) {
+  var _rotateThings = function(angleYOffsetAmount, duration, easeFunc) {
     return new Promise(function(resolve,reject){
       createjs.Tween.get(_attr)
-        .to({angleYOffset:angleYOffsetAmount},2000,createjs.Ease.cubicIn)
+        .to({angleYOffset:angleYOffsetAmount},
+          duration ? duration : 2000,
+          easeFunc ? easeFunc : createjs.Ease.cubicIn)
         .call(function(){
           _attr.angleYOffset = 0;
           resolve();
