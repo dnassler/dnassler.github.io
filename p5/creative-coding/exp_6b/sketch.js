@@ -802,7 +802,7 @@ var ThingMgr = function() {
     // }
     return Promise.resolve().then(function(){
       return Promise.all(
-        [_rotateThings(PI,2000,createjs.Ease.cubicIn), _fadeThings(false,1500,500)]);
+        [_rotateThings(TWO_PI+HALF_PI,5000,createjs.Ease.cubicIn), _fadeThings(false,4000,1000)]);
     }).then(function(){
       _waveIndexIncFactor = 1;
       if ( patternType === ThingsPattern.FLAT ) {
@@ -823,7 +823,7 @@ var ThingMgr = function() {
         _resetThings();
       }
     }).then(function(){
-      return Promise.all( [_fadeThings(true,0,500), _rotateThings(PI,2000,createjs.Ease.cubicOut)] );
+      return Promise.all( [_fadeThings(true,0,1000), _rotateThings(TWO_PI+HALF_PI,5000,createjs.Ease.cubicOut)] );
     });
   };
   this.changePattern = _changePattern;
@@ -1061,15 +1061,17 @@ var SceneMgr = function(colorMgr, posMgr, thingMgr, wallMgr, camMgr) {
   };
 
   var _startMovingWalls = function() {
+    var pArr = [Promise.resolve()];
     var wallArr = wm.getWallArr();
     wallArr.forEach( function( wall ){
       var r = random(3);
       if ( r < 1 ) {
-        wall.moveWallToNewOffset( random(10), random(2000), random(5000,7000) );
+        pArr.push( wall.moveWallToNewOffset( random(10), random(2000), random(5000,7000) ) );
       } else if ( r < 2 ) {
-        wall.moveWallToNewOffset( 0, random(2000), random(5000,7000) );
+        pArr.push( wall.moveWallToNewOffset( 0, random(2000), random(5000,7000) ) );
       }
     });
+    return Promise.all( pArr );
   };
 
   this.update = function() {
