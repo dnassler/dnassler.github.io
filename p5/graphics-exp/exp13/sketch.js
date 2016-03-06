@@ -46,7 +46,7 @@ function setup() {
   // var g1 = createGraphics(width,height);
   // g1.noStroke();
   // g1.fill(255);
-  // g1.rectMode(CENTER); 
+  // g1.rectMode(CENTER);
 
   // g1.translate(width/2,height/2);
   // x1 = 0;
@@ -307,3 +307,10 @@ Math.easeInCubic = function (t, b, c, d) {
   t /= d;
   return c*t*t*t + b;
 };
+
+function keyTyped() {
+  if (key === ' ') {
+    save('exp13blackandwhiteshapes.png');
+  }
+  return false; // prevent any default behavior
+}
